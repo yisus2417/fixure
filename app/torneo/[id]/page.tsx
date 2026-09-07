@@ -20,7 +20,11 @@ export default function GestionarTorneo({ params }: { params: Promise<{ id: stri
   const [usuario, setUsuario] = useState<any>(null);
   const [tab, setTab] = useState<'equipos' | 'partidos' | 'tabla'>('equipos');
   const [showModalEquipo, setShowModalEquipo] = useState(false);
-  const [showModalPartido, setShowModalPartido] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
+
+  useEffect(() => {
+    setBaseUrl(window.location.origin);
+  }, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('futsal_current_user');
@@ -33,7 +37,7 @@ export default function GestionarTorneo({ params }: { params: Promise<{ id: stri
     const storedTorneos = localStorage.getItem(`futsal_torneos_${JSON.parse(storedUser).id}`);
     const misTorneos: Torneo[] = storedTorneos ? JSON.parse(storedTorneos) : [];
     const encontrado = misTorneos.find(t => t.id === id);
-    
+
     if (!encontrado) {
       alert('Torneo no encontrado');
       router.push('/dashboard');
@@ -115,8 +119,8 @@ export default function GestionarTorneo({ params }: { params: Promise<{ id: stri
   };
 
   const copiarLink = () => {
-    if (!torneo) return;
-    const link = `${window.location.origin}/publico/${torneo.comparteHash}`;
+    if (!torneo || !baseUrl) return;
+    const link = `${baseUrl}/publico/${torneo.comparteHash}`;
     navigator.clipboard.writeText(link);
     alert('✓ Link copiado');
   };
@@ -133,9 +137,9 @@ export default function GestionarTorneo({ params }: { params: Promise<{ id: stri
             <h1 className="dashboard-title">{torneo.nombre}</h1>
             <p className="text-muted">{torneo.formato} · {torneo.modalidad} · {torneo.equipos.length} equipos</p>
           </div>
-          <div className="flex gap-1">
+            <div className="flex gap-1">
             <button onClick={copiarLink} className="btn btn-secondary btn-small">
-              🔗 {window.location.origin}/publico/{torneo.comparteHash}
+              🔗 {baseUrl}/publico/{torneo.comparteHash}
             </button>
             <Link href={`/publico/${torneo.comparteHash}`} target="_blank" className="btn btn-secondary btn-small">
               👁 Ver Público
