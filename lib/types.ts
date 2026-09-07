@@ -39,6 +39,9 @@ export interface Partido {
   estado: 'pendiente' | 'en_vivo' | 'finalizado';
   fecha?: string;
   hora?: string;
+  horaInicio?: string;
+  horaFin?: string;
+  minutoActual?: number;
   incidencias: Incidencia[];
   ronda: number;
   siguientePartidoId?: string;

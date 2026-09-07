@@ -6,10 +6,12 @@ interface LlaveProps {
   partidos: Partido[];
   faseActual: string;
   onActualizarResultado?: (partidoId: string, gl: number, gv: number) => void;
+  onIniciarPartido?: (partidoId: string) => void;
+  onTerminarPartido?: (partidoId: string) => void;
   soloLectura?: boolean;
 }
 
-export default function LlaveEliminacion({ partidos, faseActual, soloLectura, onActualizarResultado }: LlaveProps) {
+export default function LlaveEliminacion({ partidos, faseActual, soloLectura, onActualizarResultado, onIniciarPartido, onTerminarPartido }: LlaveProps) {
   const fasesOrdenadas = ['Final', 'Semifinal', 'Cuartos', 'Octavos', 'Dieciseisavos', 'Treintaidosavos'];
 
   const getFaseOrden = (fase: string): number => {
@@ -26,20 +28,33 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
 
   const getPartidosFase = (fase: string) => partidos.filter(p => p.fase === fase);
 
+  const getMinutoMostrar = (partido: Partido) => {
+    if (partido.estado === 'pendiente') return null;
+    if (partido.estado === 'finalizado') return 'FT';
+    if (partido.minutoActual !== undefined) return `${partido.minutoActual}'`;
+    return null;
+  };
+
   const renderPartido = (partido: Partido) => (
     <div
       key={partido.id}
       className={`bracket-match ${partido.estado === 'en_vivo' ? 'en-vivo' : ''} ${partido.estado === 'finalizado' ? 'finalizado' : ''}`}
-      onClick={() => {
-        if (soloLectura || !onActualizarResultado) return;
-        const gl = prompt(`Goles ${partido.nombreLocal}:`, String(partido.golesLocal));
-        const gv = prompt(`Goles ${partido.nombreVisitante}:`, String(partido.golesVisitante));
-        if (gl !== null && gv !== null) {
-          onActualizarResultado(partido.id, parseInt(gl) || 0, parseInt(gv) || 0);
-        }
-      }}
       style={{ cursor: soloLectura ? 'default' : 'pointer' }}
     >
+      {!soloLectura && (
+        <div className="bracket-controls">
+          {partido.estado === 'pendiente' && onIniciarPartido && (
+            <button className="bracket-btn start" onClick={(e) => { e.stopPropagation(); onIniciarPartido(partido.id); }}>
+              ▶ Iniciar
+            </button>
+          )}
+          {partido.estado === 'en_vivo' && onTerminarPartido && (
+            <button className="bracket-btn end" onClick={(e) => { e.stopPropagation(); onTerminarPartido(partido.id); }}>
+              ■ Terminar
+            </button>
+          )}
+        </div>
+      )}
       <div className="bracket-team">
         <span className="bracket-color" style={{ background: partido.colorLocal }} />
         <span className={`bracket-name ${partido.golesLocal > partido.golesVisitante ? 'ganador' : ''}`}>
@@ -54,9 +69,21 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
         </span>
         <span className="bracket-goles">{partido.golesVisitante}</span>
       </div>
-      {partido.hora && (
-        <div className="bracket-hora">{partido.hora}</div>
-      )}
+      <div className="bracket-info">
+        {partido.estado === 'en_vivo' && partido.horaInicio && (
+          <span className="bracket-tiempo">
+            🔴 {getMinutoMostrar(partido)} · {partido.horaInicio}
+          </span>
+        )}
+        {partido.estado === 'finalizado' && (
+          <span className="bracket-tiempo finalizado">
+            ✓ Final · {partido.horaFin || ''}
+          </span>
+        )}
+        {partido.estado === 'pendiente' && partido.hora && (
+          <span className="bracket-tiempo">⏰ {partido.hora}</span>
+        )}
+      </div>
     </div>
   );
 
@@ -140,6 +167,42 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
           color: #888;
           text-align: center;
           margin-top: 4px;
+        }
+        .bracket-controls {
+          display: flex;
+          gap: 4px;
+          margin-bottom: 8px;
+        }
+        .bracket-btn {
+          flex: 1;
+          padding: 3px 6px;
+          font-size: 10px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: bold;
+        }
+        .bracket-btn.start {
+          background: #00f5a0;
+          color: #000;
+        }
+        .bracket-btn.end {
+          background: #ff4757;
+          color: #fff;
+        }
+        .bracket-info {
+          text-align: center;
+          margin-top: 6px;
+          padding-top: 6px;
+          border-top: 1px solid rgba(0, 180, 216, 0.2);
+        }
+        .bracket-tiempo {
+          font-size: 11px;
+          color: #00f5a0;
+          font-weight: bold;
+        }
+        .bracket-tiempo.finalizado {
+          color: #888;
         }
       `}</style>
       {fasesPresentes.length === 0 ? (

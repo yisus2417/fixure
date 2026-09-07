@@ -101,7 +101,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
     ronda1.push({
       id: generarId(),
       jornada: 1,
-      fase: nombresRondas[0], // Primera fase (Octavos, Cuartos, etc.)
+      fase: nombresRondas[0],
       local: local.id,
       visitante: visitante.id,
       nombreLocal: local.nombre,
@@ -112,6 +112,9 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
       golesVisitante: 0,
       estado: 'pendiente',
       hora: '',
+      horaInicio: '',
+      horaFin: '',
+      minutoActual: 0,
       incidencias: [],
       ronda: 1
     });
@@ -122,7 +125,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
     ronda1.push({
       id: generarId(),
       jornada: 1,
-      fase: nombresRondas[0], // Primera fase
+      fase: nombresRondas[0],
       local: equipoBye.id,
       visitante: '',
       nombreLocal: equipoBye.nombre,
@@ -133,6 +136,9 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
       golesVisitante: 0,
       estado: 'finalizado',
       hora: '',
+      horaInicio: '',
+      horaFin: '',
+      minutoActual: 0,
       incidencias: [],
       ronda: 1
     });
@@ -201,6 +207,9 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
         golesVisitante: 0,
         estado: 'pendiente',
         hora: '',
+        horaInicio: '',
+        horaFin: '',
+        minutoActual: 0,
         incidencias: [],
         ronda
       };
@@ -370,6 +379,44 @@ export function avanzarGanador(partidos: Partido[], partidoId: string): Partido[
       } else {
         return { ...p, visitante: equipoGanador.id, nombreVisitante: equipoGanador.nombre, colorVisitante: equipoGanador.color };
       }
+    }
+    return p;
+  });
+}
+
+/**
+ * Inicia un partido (cambia estado a en_vivo y registra hora de inicio)
+ */
+export function iniciarPartido(partidos: Partido[], partidoId: string): Partido[] {
+  const ahora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return partidos.map(p => {
+    if (p.id === partidoId && p.estado === 'pendiente') {
+      return { ...p, estado: 'en_vivo' as const, horaInicio: ahora, minutoActual: 0 };
+    }
+    return p;
+  });
+}
+
+/**
+ * Termina un partido
+ */
+export function terminarPartido(partidos: Partido[], partidoId: string): Partido[] {
+  const ahora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return partidos.map(p => {
+    if (p.id === partidoId && p.estado === 'en_vivo') {
+      return { ...p, estado: 'finalizado' as const, horaFin: ahora };
+    }
+    return p;
+  });
+}
+
+/**
+ * Actualiza el minuto actual de un partido en vivo
+ */
+export function actualizarMinuto(partidos: Partido[], partidoId: string, minuto: number): Partido[] {
+  return partidos.map(p => {
+    if (p.id === partidoId && p.estado === 'en_vivo') {
+      return { ...p, minutoActual: minuto };
     }
     return p;
   });
