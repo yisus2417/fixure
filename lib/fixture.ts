@@ -100,11 +100,16 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
   let equipoBye: Equipo | null = tieneBye ? equiposRestantes[equiposRestantes.length - 1] : null;
   if (equipoBye) equiposRestantes = equiposRestantes.slice(0, -1);
 
+  // Contadores separados para cada cancha en octavos
+  let numeroPartidoCancha1 = 1;
+  let numeroPartidoCancha2 = 1;
+
   for (let i = 0; i < numPartidosRonda1; i++) {
     const local = equiposRestantes[i * 2];
     const visitante = equiposRestantes[i * 2 + 1];
-    const numPartido = numeroPartidoGlobal++;
-    const cancha = numRondas >= 4 ? (i % 2 + 1) : undefined; // Solo octavos tienen cancha (2 canchas)
+    const esCancha1 = i % 2 === 0;
+    const numPartido = esCancha1 ? numeroPartidoCancha1++ : numeroPartidoCancha2++;
+    const cancha = numRondas >= 4 ? (esCancha1 ? 1 : 2) : undefined;
     ronda1.push({
       id: generarId(),
       numeroPartido: numPartido,
