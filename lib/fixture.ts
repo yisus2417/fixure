@@ -67,26 +67,26 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
   while (potencia < n) potencia *= 2;
 
   const fixture: Partido[] = [];
-  const numByes = potencia - n;
-  
+
   // Barajar equipos
   const shuffled = [...equipos].sort(() => Math.random() - 0.5);
-  
+
   // Calcular cuántas rondas hay
   const rondas = Math.log2(potencia);
-  
+
   let roundName = 'Final';
   if (rondas === 2) roundName = 'Semifinal';
   else if (rondas === 3) roundName = 'Cuartos';
   else if (rondas === 4) roundName = 'Octavos';
   else if (rondas >= 5) roundName = `${potencia / 2}avos`;
 
-  const numPartidosRonda1 = potencia / 2;
-  for (let i = 0; i < numPartidosRonda1; i++) {
-    const local = shuffled[i] || null;
-    const visitante = shuffled[potencia - 1 - i] || null;
+  const numPartidosRonda1 = Math.floor(shuffled.length / 2);
 
-    if (local && visitante) {
+  for (let i = 0; i < numPartidosRonda1; i++) {
+    const local = shuffled[i];
+    const visitante = shuffled[shuffled.length - 1 - i];
+
+    if (local && visitante && local.id !== visitante.id) {
       fixture.push({
         id: generarId(),
         jornada: 1,
@@ -100,23 +100,6 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
         golesLocal: 0,
         golesVisitante: 0,
         estado: 'pendiente',
-        incidencias: []
-      });
-    } else if (local && !visitante) {
-      // Bye - avanza directo
-      fixture.push({
-        id: generarId(),
-        jornada: 1,
-        fase: roundName,
-        local: local.id,
-        visitante: 'BYE',
-        nombreLocal: local.nombre,
-        nombreVisitante: 'BYE',
-        colorLocal: local.color,
-        colorVisitante: '#666',
-        golesLocal: 0,
-        golesVisitante: 0,
-        estado: 'finalizado',
         incidencias: []
       });
     }
