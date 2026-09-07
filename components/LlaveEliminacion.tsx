@@ -28,7 +28,19 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
 
   const fasesPresentes = Array.from(new Set(partidos.map(p => p.fase))).sort((a, b) => getFaseOrden(b) - getFaseOrden(a));
 
-  const getPartidosFase = (fase: string) => partidos.filter(p => p.fase === fase);
+  const getPartidosFase = (fase: string, cancha?: number) => {
+    let filtered = partidos.filter(p => p.fase === fase);
+    if (cancha !== undefined) {
+      filtered = filtered.filter(p => p.cancha === cancha);
+    } else {
+      filtered = filtered.filter(p => !p.cancha);
+    }
+    return filtered;
+  };
+
+  const getPartidosOctavosCancha1 = () => partidos.filter(p => p.fase === 'Octavos' && p.cancha === 1);
+  const getPartidosOctavosCancha2 = () => partidos.filter(p => p.fase === 'Octavos' && p.cancha === 2);
+  const getPartidosFaseSinCancha = (fase: string) => partidos.filter(p => p.fase === fase && !p.cancha);
 
   const getTiempoLabel = (tiempo: string) => {
     switch (tiempo) {
@@ -58,11 +70,14 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
     }
   };
 
-  const renderPartido = (partido: Partido) => (
+  const renderPartido = (partido: Partido, mostrarNumero: boolean = true) => (
     <div
       key={partido.id}
       className={`bracket-match ${partido.estado === 'en_vivo' ? 'en-vivo' : ''} ${partido.estado === 'finalizado' ? 'finalizado' : ''}`}
     >
+      {mostrarNumero && (
+        <div className="bracket-numero">#{partido.numeroPartido}</div>
+      )}
       {!soloLectura && (
         <div className="bracket-controls">
           {partido.estado === 'pendiente' && onIniciarPartido && (
@@ -197,6 +212,13 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
           min-width: 20px;
           text-align: center;
         }
+        .bracket-numero {
+          font-size: 10px;
+          color: #888;
+          text-align: center;
+          margin-bottom: 4px;
+          font-weight: bold;
+        }
         .bracket-hora {
           font-size: 10px;
           color: #888;
@@ -269,14 +291,36 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 30 }}>
-          {fasesPresentes.map(fase => (
-            <div key={fase} className="bracket-round">
-              <div className="bracket-round-title">{fase}</div>
-              <div className="bracket-matches">
-                {getPartidosFase(fase).map(partido => renderPartido(partido))}
+          {fasesPresentes.map(fase => {
+            if (fase === 'Octavos') {
+              const octavosC1 = getPartidosOctavosCancha1();
+              const octavosC2 = getPartidosOctavosCancha2();
+              return (
+                <div key={fase} style={{ display: 'flex', gap: 30 }}>
+                  <div className="bracket-round">
+                    <div className="bracket-round-title">🏟️ Cancha 1</div>
+                    <div className="bracket-matches">
+                      {octavosC1.map(partido => renderPartido(partido))}
+                    </div>
+                  </div>
+                  <div className="bracket-round">
+                    <div className="bracket-round-title">🏟️ Cancha 2</div>
+                    <div className="bracket-matches">
+                      {octavosC2.map(partido => renderPartido(partido))}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={fase} className="bracket-round">
+                <div className="bracket-round-title">{fase}</div>
+                <div className="bracket-matches">
+                  {getPartidosFaseSinCancha(fase).map(partido => renderPartido(partido))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

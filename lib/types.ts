@@ -25,6 +25,7 @@ export interface EstadisticasEquipo {
 
 export interface Partido {
   id: string;
+  numeroPartido: number;
   jornada: number;
   fase: string;
   grupo?: string;
@@ -44,6 +45,7 @@ export interface Partido {
   horaFin?: string;
   minutoActual?: number;
   segundoActual?: number;
+  cancha?: number;
   incidencias: Incidencia[];
   ronda: number;
   siguientePartidoId?: string;

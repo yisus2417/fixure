@@ -10,17 +10,16 @@ function generarId(): string {
 /**
  * Genera fixture round-robin (liga) para un número par/impar de equipos
  */
-export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
+export function generarLigaRoundRobin(equipos: Equipo[], numeroPartidoInicial: number = 1): Partido[] {
   const n = equipos.length;
   if (n < 2) return [];
 
-  // Añadir null si es impar para crearBye
   const arr = [...equipos];
   if (n % 2 !== 0) arr.push({ id: 'BYE', nombre: 'BYE', color: '#666', estadisticas: { jugados: 0, ganados: 0, empatados: 0, perdidos: 0, golesFavor: 0, golesContra: 0, puntos: 0 } });
 
   const numJornadas = arr.length - 1;
-  const partidosPorJornada = Math.floor(arr.length / 2);
   const fixture: Partido[] = [];
+  let numeroPartido = numeroPartidoInicial;
 
   for (let j = 0; j < numJornadas; j++) {
     for (let i = 0; i < arr.length / 2; i++) {
@@ -30,6 +29,7 @@ export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
       if (local.id !== 'BYE' && visitante.id !== 'BYE') {
         fixture.push({
           id: generarId(),
+          numeroPartido: numeroPartido++,
           jornada: j + 1,
           fase: 'Liga Regular',
           local: local.id,
@@ -53,7 +53,6 @@ export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
       }
     }
 
-    // Rotar equipos (el primero se queda fijo, el resto rota)
     const fijo = arr[0];
     const rotar = arr.slice(1);
     rotar.unshift(rotar.pop()!);
@@ -91,6 +90,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
 
   const fixture: Partido[] = [];
   const partidosPorRonda: Partido[][] = [];
+  let numeroPartidoGlobal = 1;
 
   // Ronda 1: emparejar tantos como sea posible, 1 BYE si es impar
   const ronda1: Partido[] = [];
@@ -103,8 +103,11 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
   for (let i = 0; i < numPartidosRonda1; i++) {
     const local = equiposRestantes[i * 2];
     const visitante = equiposRestantes[i * 2 + 1];
+    const numPartido = numeroPartidoGlobal++;
+    const cancha = numRondas >= 4 ? (i % 2 + 1) : undefined; // Solo octavos tienen cancha (2 canchas)
     ronda1.push({
       id: generarId(),
+      numeroPartido: numPartido,
       jornada: 1,
       fase: nombresRondas[0],
       local: local.id,
@@ -122,6 +125,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
       horaFin: '',
       minutoActual: 0,
       segundoActual: 0,
+      cancha,
       incidencias: [],
       ronda: 1
     });
@@ -129,8 +133,10 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
 
   // Agregar partido BYE si hay
   if (equipoBye) {
+    const numPartido = numeroPartidoGlobal++;
     ronda1.push({
       id: generarId(),
+      numeroPartido: numPartido,
       jornada: 1,
       fase: nombresRondas[0],
       local: equipoBye.id,
@@ -148,6 +154,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
       horaFin: '',
       minutoActual: 0,
       segundoActual: 0,
+      cancha: undefined,
       incidencias: [],
       ronda: 1
     });
@@ -202,8 +209,10 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
         visitanteNombre = 'TBD';
       }
 
+      const numPartido = numeroPartidoGlobal++;
       const partido: Partido = {
         id: generarId(),
+        numeroPartido: numPartido,
         jornada: ronda,
         fase: nombreFase,
         local: localId,
@@ -221,6 +230,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
         horaFin: '',
         minutoActual: 0,
         segundoActual: 0,
+        cancha: undefined,
         incidencias: [],
         ronda
       };
