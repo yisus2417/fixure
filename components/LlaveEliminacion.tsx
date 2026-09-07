@@ -112,7 +112,7 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
         )}
         {partido.estado === 'finalizado' && (
           <span className="bracket-tiempo finalizado">
-            ✓ Final · {partido.horaFin || ''}
+            ✓ Final · {partido.horaInicio || ''} - {partido.horaFin || ''}
           </span>
         )}
         {partido.estado === 'pendiente' && partido.hora && (
