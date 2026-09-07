@@ -41,6 +41,7 @@ export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
           golesLocal: 0,
           golesVisitante: 0,
           estado: 'pendiente',
+          hora: '',
           incidencias: []
         });
       }
@@ -100,6 +101,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
         golesLocal: 0,
         golesVisitante: 0,
         estado: 'pendiente',
+        hora: '',
         incidencias: []
       });
     }

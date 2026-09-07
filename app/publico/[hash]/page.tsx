@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Torneo, Equipo } from '@/lib/types';
 import { calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
+import LlaveEliminacion from '@/components/LlaveEliminacion';
 
 export default function VistaPublica({ params }: { params: { hash: string } }) {
   const { hash } = params;
@@ -11,7 +12,22 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'tabla' | 'partidos'>('tabla');
 
-  useEffect(() => {
+  const cargarTorneo = async () => {
+    setLoading(true);
+
+    try {
+      const res = await fetch(`/api/torneo/${hash}`);
+      if (res.ok) {
+        const torneoKV = await res.json();
+        const equiposConStats = calcularEstadisticas(torneoKV.equipos, torneoKV.partidos);
+        setTorneo({ ...torneoKV, equipos: equiposConStats });
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      console.log('KV no disponible, buscando en localStorage');
+    }
+
     const usuarios = JSON.parse(localStorage.getItem('futsal_usuarios') || '[]');
 
     for (const user of usuarios) {
@@ -28,6 +44,10 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
       }
     }
     setLoading(false);
+  };
+
+  useEffect(() => {
+    cargarTorneo();
   }, [hash]);
 
   const copiarLink = () => {
@@ -104,6 +124,9 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
           <button className={`tab ${tab === 'partidos' ? 'active' : ''}`} onClick={() => setTab('partidos')}>
             ⚽ Partidos
           </button>
+          <button className="tab" onClick={cargarTorneo} style={{ marginLeft: 'auto' }}>
+            🔄 Actualizar
+          </button>
         </div>
 
         {tab === 'tabla' && (
@@ -158,6 +181,12 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
               <div className="empty-state">
                 <p>Aún no hay partidos generados</p>
               </div>
+            ) : torneo.formato === 'eliminacion' ? (
+              <LlaveEliminacion
+                partidos={torneo.partidos}
+                faseActual=""
+                soloLectura={true}
+              />
             ) : (
               torneo.partidos.map(partido => (
                 <div key={partido.id} className={`match-card ${partido.estado}`}>
@@ -179,6 +208,7 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
                       {partido.estado === 'finalizado' ? '✓' : partido.estado === 'en_vivo' ? '🔴' : '⏰'} {partido.fase}
                     </span>
                     <span>Jornada {partido.jornada}</span>
+                    {partido.hora && <span>🕐 {partido.hora}</span>}
                   </div>
                 </div>
               ))

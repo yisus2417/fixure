@@ -38,6 +38,7 @@ export interface Partido {
   golesVisitante: number;
   estado: 'pendiente' | 'en_vivo' | 'finalizado';
   fecha?: string;
+  hora?: string;
   incidencias: Incidencia[];
 }
 

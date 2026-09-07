@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Torneo, Equipo, Partido } from '@/lib/types';
 import { generarLigaRoundRobin, generarEliminacion, generarGrupos, calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
+import LlaveEliminacion from '@/components/LlaveEliminacion';
 
 function generarId(): string {
   if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
@@ -46,7 +47,7 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
     setTorneo(encontrado);
   }, [id, router]);
 
-  const guardar = useCallback((actualizado: Torneo) => {
+  const guardar = useCallback(async (actualizado: Torneo) => {
     if (!usuario) return;
     const stored = localStorage.getItem(`futsal_torneos_${usuario.id}`);
     const torneos: Torneo[] = stored ? JSON.parse(stored) : [];
@@ -55,6 +56,16 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
       torneos[idx] = actualizado;
       localStorage.setItem(`futsal_torneos_${usuario.id}`, JSON.stringify(torneos));
       setTorneo({ ...actualizado });
+
+      try {
+        await fetch('/api/torneo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(actualizado),
+        });
+      } catch (e) {
+        console.log('KV no disponible, solo localStorage');
+      }
     }
   }, [usuario]);
 
@@ -210,6 +221,12 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
               <div className="empty-state">
                 <p>Genera el fixture desde la pestaña Equipos</p>
               </div>
+            ) : torneo.formato === 'eliminacion' ? (
+              <LlaveEliminacion
+                partidos={torneo.partidos}
+                faseActual=""
+                onActualizarResultado={(id, gl, gv) => registrarResultado(id, gl, gv)}
+              />
             ) : (
               torneo.partidos.map(partido => (
                 <div key={partido.id} className="match-card">
@@ -237,6 +254,31 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
                       {partido.estado === 'finalizado' ? '✓' : partido.estado === 'en_vivo' ? '🔴' : '⏰'} {partido.fase}
                     </span>
                     <span>Jornada {partido.jornada}</span>
+                    <input
+                      type="time"
+                      value={partido.hora || ''}
+                      onChange={(e) => {
+                        const actualizado = torneo.partidos.map(p =>
+                          p.id === partido.id ? { ...p, hora: e.target.value } : p
+                        );
+                        guardar({ ...torneo, partidos: actualizado });
+                      }}
+                      style={{ background: 'transparent', border: '1px solid #00b4d8', color: '#fff', borderRadius: 4, padding: '2px 6px', fontSize: 12 }}
+                    />
+                    <select
+                      value={partido.estado}
+                      onChange={(e) => {
+                        const actualizado = torneo.partidos.map(p =>
+                          p.id === partido.id ? { ...p, estado: e.target.value as any } : p
+                        );
+                        guardar({ ...torneo, partidos: actualizado });
+                      }}
+                      style={{ background: 'transparent', border: '1px solid #00b4d8', color: '#fff', borderRadius: 4, padding: '2px 6px', fontSize: 12 }}
+                    >
+                      <option value="pendiente">Pendiente</option>
+                      <option value="en_vivo">En Vivo</option>
+                      <option value="finalizado">Finalizado</option>
+                    </select>
                   </div>
                 </div>
               ))
