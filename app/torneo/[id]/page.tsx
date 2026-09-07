@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Torneo, Equipo, Partido } from '@/lib/types';
@@ -13,8 +13,8 @@ function generarId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-export default function GestionarTorneo({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function GestionarTorneo({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [usuario, setUsuario] = useState<any>(null);

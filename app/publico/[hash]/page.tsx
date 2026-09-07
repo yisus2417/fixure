@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Torneo, Equipo } from '@/lib/types';
 import { calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
 
-export default function VistaPublica({ params }: { params: Promise<{ hash: string }> }) {
-  const { hash } = use(params);
+export default function VistaPublica({ params }: { params: { hash: string } }) {
+  const { hash } = params;
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'tabla' | 'partidos'>('tabla');
