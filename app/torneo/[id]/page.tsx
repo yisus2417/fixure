@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Torneo, Equipo, Partido } from '@/lib/types';
-import { generarLigaRoundRobin, generarEliminacion, generarGrupos, calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
+import { generarLigaRoundRobin, generarEliminacion, generarGrupos, calcularEstadisticas, ordenarEquipos, avanzarGanador } from '@/lib/fixture';
 import LlaveEliminacion from '@/components/LlaveEliminacion';
 
 function generarId(): string {
@@ -115,16 +115,22 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
     const partido = torneo.partidos.find(p => p.id === partidoId);
     if (!partido) return;
 
+    let partidosActualizados = torneo.partidos.map(p =>
+      p.id === partidoId
+        ? { ...p, golesLocal, golesVisitante, estado: 'finalizado' as const }
+        : p
+    );
+
+    // Avanzar ganador a la siguiente ronda (solo para eliminación)
+    if (torneo.formato === 'eliminacion') {
+      partidosActualizados = avanzarGanador(partidosActualizados, partidoId);
+    }
+
     const actualizado = {
       ...torneo,
-      partidos: torneo.partidos.map(p => 
-        p.id === partidoId 
-          ? { ...p, golesLocal, golesVisitante, estado: 'finalizado' as const }
-          : p
-      )
+      partidos: partidosActualizados
     };
 
-    // Recalcular estadísticas
     const equiposConStats = calcularEstadisticas(actualizado.equipos, actualizado.partidos);
     guardar({ ...actualizado, equipos: equiposConStats });
   };

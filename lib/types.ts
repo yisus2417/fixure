@@ -40,6 +40,9 @@ export interface Partido {
   fecha?: string;
   hora?: string;
   incidencias: Incidencia[];
+  ronda: number;
+  siguientePartidoId?: string;
+  posicionEnSiguiente?: 'local' | 'visitante';
 }
 
 export interface Incidencia {

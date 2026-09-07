@@ -42,7 +42,8 @@ export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
           golesVisitante: 0,
           estado: 'pendiente',
           hora: '',
-          incidencias: []
+          incidencias: [],
+          ronda: 1
         });
       }
     }
@@ -58,7 +59,7 @@ export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
 }
 
 /**
- * Genera fixture de eliminación directa
+ * Genera fixture completo de eliminación directa con todas las llaves
  */
 export function generarEliminacion(equipos: Equipo[]): Partido[] {
   if (equipos.length < 2) return [];
@@ -67,43 +68,122 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
   let potencia = 2;
   while (potencia < n) potencia *= 2;
 
+  // Crear array con BYEs para completar potencia de 2
+  const equiposCompletos: (Equipo | null)[] = [...equipos];
+  while (equiposCompletos.length < potencia) {
+    equiposCompletos.push(null);
+  }
+
+  // Barajar solo los equipos reales (no los nulos)
+  const equiposReales = equipos.filter(e => e);
+  const barajados = [...equiposReales].sort(() => Math.random() - 0.5);
+
+  // Completar con BYEs al final
+  while (barajados.length < potencia) {
+    barajados.push(null as any);
+  }
+
   const fixture: Partido[] = [];
+  const numRondas = Math.log2(potencia);
 
-  // Barajar equipos
-  const shuffled = [...equipos].sort(() => Math.random() - 0.5);
+  // Nombres de rondas de la última a la primera
+  const nombresRondas = ['Final'];
+  if (numRondas >= 2) nombresRondas.unshift('Semifinal');
+  if (numRondas >= 3) nombresRondas.unshift('Cuartos');
+  if (numRondas >= 4) nombresRondas.unshift('Octavos');
+  if (numRondas >= 5) nombresRondas.unshift('Dieciseisavos');
 
-  // Calcular cuántas rondas hay
-  const rondas = Math.log2(potencia);
+  // Generar todas las rondas
+  let partidosRondaAnterior: Partido[] = [];
 
-  let roundName = 'Final';
-  if (rondas === 2) roundName = 'Semifinal';
-  else if (rondas === 3) roundName = 'Cuartos';
-  else if (rondas === 4) roundName = 'Octavos';
-  else if (rondas >= 5) roundName = `${potencia / 2}avos`;
+  for (let ronda = 1; ronda <= numRondas; ronda++) {
+    const numPartidosRonda = potencia / Math.pow(2, ronda);
+    const nombreFase = nombresRondas[numRondas - ronda];
+    const partidosRonda: Partido[] = [];
 
-  const numPartidosRonda1 = Math.floor(shuffled.length / 2);
+    for (let i = 0; i < numPartidosRonda; i++) {
+      let local: Equipo | null = null;
+      let visitante: Equipo | null = null;
 
-  for (let i = 0; i < numPartidosRonda1; i++) {
-    const local = shuffled[i];
-    const visitante = shuffled[shuffled.length - 1 - i];
+      if (ronda === 1) {
+        // Primera ronda: usar equipos barajados
+        local = barajados[i * 2];
+        visitante = barajados[i * 2 + 1];
+      } else {
+        // Rondas siguientes: los ganadores de la ronda anterior
+        const idxLocal = i * 2;
+        const idxVisitante = i * 2 + 1;
+        const partidoLocal = partidosRondaAnterior[idxLocal];
+        const partidoVisitante = partidosRondaAnterior[idxVisitante];
 
-    if (local && visitante && local.id !== visitante.id) {
-      fixture.push({
-        id: generarId(),
-        jornada: 1,
-        fase: roundName,
-        local: local.id,
-        visitante: visitante.id,
-        nombreLocal: local.nombre,
-        nombreVisitante: visitante.nombre,
-        colorLocal: local.color,
-        colorVisitante: visitante.color,
+        if (partidoLocal && partidoVisitante) {
+          if (partidoLocal.estado === 'finalizado' && partidoVisitante.estado === 'finalizado') {
+            // Ambos partidos terminados, obtener ganadores
+            local = partidoLocal.golesLocal > partidoLocal.golesVisitante
+              ? { id: partidoLocal.local, nombre: partidoLocal.nombreLocal, color: partidoLocal.colorLocal, estadisticas: { jugados: 0, ganados: 0, empatados: 0, perdidos: 0, golesFavor: 0, golesContra: 0, puntos: 0 } }
+              : { id: partidoLocal.visitante, nombre: partidoLocal.nombreVisitante, color: partidoLocal.colorVisitante, estadisticas: { jugados: 0, ganados: 0, empatados: 0, perdidos: 0, golesFavor: 0, golesContra: 0, puntos: 0 } };
+            visitante = partidoVisitante.golesLocal > partidoVisitante.golesVisitante
+              ? { id: partidoVisitante.local, nombre: partidoVisitante.nombreLocal, color: partidoVisitante.colorLocal, estadisticas: { jugados: 0, ganados: 0, empatados: 0, perdidos: 0, golesFavor: 0, golesContra: 0, puntos: 0 } }
+              : { id: partidoVisitante.visitante, nombre: partidoVisitante.nombreVisitante, color: partidoVisitante.colorVisitante, estadisticas: { jugados: 0, ganados: 0, empatados: 0, perdidos: 0, golesFavor: 0, golesContra: 0, puntos: 0 } };
+          } else {
+            // Partidos aún no terminados, dejar vacío
+            local = null;
+            visitante = null;
+          }
+        }
+      }
+
+      const partidoId = generarId();
+      const esBye = !local || !visitante;
+
+      const partido: Partido = {
+        id: partidoId,
+        jornada: ronda,
+        fase: nombreFase,
+        local: local?.id || '',
+        visitante: visitante?.id || '',
+        nombreLocal: local?.nombre || (esBye ? 'BYE' : 'TBD'),
+        nombreVisitante: visitante?.nombre || (esBye ? 'BYE' : 'TBD'),
+        colorLocal: local?.color || '#666',
+        colorVisitante: visitante?.color || '#666',
         golesLocal: 0,
         golesVisitante: 0,
-        estado: 'pendiente',
+        estado: esBye ? 'finalizado' : 'pendiente',
         hora: '',
-        incidencias: []
-      });
+        incidencias: [],
+        ronda
+      };
+
+      // Si no es bye y no es la última ronda, enlazar al siguiente partido
+      if (!esBye && ronda < numRondas) {
+        const siguienteRonda = partidosRonda.length;
+        const siguientePartidoIdx = Math.floor(partidosRonda.length / 2);
+        // Encontrar el partido en la siguiente ronda (aún no creado, se enlazará después)
+        // Usamos el índice para encontrarlo después
+        partido.siguientePartidoId = `round_${ronda + 1}_match_${siguientePartidoIdx}`;
+        partido.posicionEnSiguiente = siguienteRonda % 2 === 0 ? 'local' : 'visitante';
+      }
+
+      fixture.push(partido);
+      partidosRonda.push(partido);
+    }
+
+    partidosRondaAnterior = partidosRonda;
+  }
+
+  // Segunda pasada: asignar correctamente los siguientePartidoId
+  for (let ronda = 1; ronda < numRondas; ronda++) {
+    const partidosRonda = fixture.filter(p => p.ronda === ronda);
+    const numPartidosSiguienteRonda = potencia / Math.pow(2, ronda + 1);
+
+    for (let i = 0; i < partidosRonda.length; i++) {
+      const partido = partidosRonda[i];
+      const siguienteIdx = Math.floor(i / 2);
+      const siguientesPartidos = fixture.filter(p => p.ronda === ronda + 1);
+      if (siguientesPartidos[siguienteIdx]) {
+        partido.siguientePartidoId = siguientesPartidos[siguienteIdx].id;
+        partido.posicionEnSiguiente = i % 2 === 0 ? 'local' : 'visitante';
+      }
     }
   }
 
@@ -228,5 +308,33 @@ export function ordenarEquipos(equipos: Equipo[]): Equipo[] {
     const difB = b.estadisticas.golesFavor - b.estadisticas.golesContra;
     if (difB !== difA) return difB - difA;
     return b.estadisticas.golesFavor - a.estadisticas.golesFavor;
+  });
+}
+
+/**
+ * Avanza al ganador de un partido a la siguiente ronda
+ */
+export function avanzarGanador(partidos: Partido[], partidoId: string): Partido[] {
+  const partidoActualizado = partidos.find(p => p.id === partidoId);
+  if (!partidoActualizado || partidoActualizado.estado !== 'finalizado') {
+    return partidos;
+  }
+
+  const ganadorEsLocal = partidoActualizado.golesLocal > partidoActualizado.golesVisitante;
+  const equipoGanador = {
+    id: ganadorEsLocal ? partidoActualizado.local : partidoActualizado.visitante,
+    nombre: ganadorEsLocal ? partidoActualizado.nombreLocal : partidoActualizado.nombreVisitante,
+    color: ganadorEsLocal ? partidoActualizado.colorLocal : partidoActualizado.colorVisitante
+  };
+
+  return partidos.map(p => {
+    if (p.id === partidoActualizado.siguientePartidoId) {
+      if (partidoActualizado.posicionEnSiguiente === 'local') {
+        return { ...p, local: equipoGanador.id, nombreLocal: equipoGanador.nombre, colorLocal: equipoGanador.color };
+      } else {
+        return { ...p, visitante: equipoGanador.id, nombreVisitante: equipoGanador.nombre, colorVisitante: equipoGanador.color };
+      }
+    }
+    return p;
   });
 }
