@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Torneo, Equipo } from '@/lib/types';
 import { calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
 import LlaveEliminacion from '@/components/LlaveEliminacion';
@@ -10,11 +9,8 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
   const { hash } = params;
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'tabla' | 'partidos'>('tabla');
 
   const cargarTorneo = async () => {
-    setLoading(true);
-
     try {
       const res = await fetch(`/api/torneo/${hash}`);
       if (res.ok) {
@@ -48,6 +44,8 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
 
   useEffect(() => {
     cargarTorneo();
+    const interval = setInterval(cargarTorneo, 5000);
+    return () => clearInterval(interval);
   }, [hash]);
 
   const copiarLink = () => {
@@ -81,9 +79,6 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
             <div className="empty-icon">🔍</div>
             <h3>Fixture no encontrado</h3>
             <p>Este link no es válido o fue eliminado</p>
-            <Link href="/" className="btn btn-primary mt-3">
-              ⚡ Crear mi Fixture
-            </Link>
           </div>
         </div>
       </div>
@@ -111,121 +106,61 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
             <button className="share-btn whatsapp" onClick={compartirWhatsApp}>
               💬 WhatsApp
             </button>
-            <Link href="/" className="share-btn">
-              ⚡ Crear mi Fixture
-            </Link>
           </div>
         </div>
 
         <div className="tabs">
-          <button className={`tab ${tab === 'tabla' ? 'active' : ''}`} onClick={() => setTab('tabla')}>
-            📊 Tabla de Posiciones
-          </button>
-          <button className={`tab ${tab === 'partidos' ? 'active' : ''}`} onClick={() => setTab('partidos')}>
+          <button className={`tab active`}>
             ⚽ Partidos
-          </button>
-          <button className="tab" onClick={cargarTorneo} style={{ marginLeft: 'auto' }}>
-            🔄 Actualizar
           </button>
         </div>
 
-        {tab === 'tabla' && (
-          <div>
-            {equiposOrdenados.length === 0 ? (
-              <div className="empty-state">
-                <p>Aún no hay equipos registrados</p>
-              </div>
-            ) : (
-              <table className="standings-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Equipo</th>
-                    <th>JJ</th>
-                    <th>JG</th>
-                    <th>JE</th>
-                    <th>JP</th>
-                    <th>GF</th>
-                    <th>GC</th>
-                    <th>PTS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {equiposOrdenados.map((eq, i) => (
-                    <tr key={eq.id}>
-                      <td className="pos-cell">{i + 1}</td>
-                      <td>
-                        <div className="team-cell">
-                          <span className="team-color-dot" style={{ background: eq.color }} />
-                          {eq.nombre}
-                        </div>
-                      </td>
-                      <td>{eq.estadisticas.jugados}</td>
-                      <td>{eq.estadisticas.ganados}</td>
-                      <td>{eq.estadisticas.empatados}</td>
-                      <td>{eq.estadisticas.perdidos}</td>
-                      <td>{eq.estadisticas.golesFavor}</td>
-                      <td>{eq.estadisticas.golesContra}</td>
-                      <td className="points-cell">{eq.estadisticas.puntos}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+        {torneo.partidos.length === 0 ? (
+          <div className="empty-state">
+            <p>Aún no hay partidos generados</p>
           </div>
-        )}
-
-        {tab === 'partidos' && (
+        ) : torneo.formato === 'eliminacion' ? (
+          <LlaveEliminacion
+            partidos={torneo.partidos}
+            faseActual=""
+            soloLectura={true}
+          />
+        ) : (
           <div>
-            {torneo.partidos.length === 0 ? (
-              <div className="empty-state">
-                <p>Aún no hay partidos generados</p>
-              </div>
-            ) : torneo.formato === 'eliminacion' ? (
-              <LlaveEliminacion
-                partidos={torneo.partidos}
-                faseActual=""
-                soloLectura={true}
-              />
-            ) : (
-              torneo.partidos.map(partido => (
-                <div key={partido.id} className={`match-card ${partido.estado}`}>
-                  <div className="match-teams">
-                    <div className="match-team">
-                      <span className="match-team-color" style={{ background: partido.colorLocal }} />
-                      <span>{partido.nombreLocal}</span>
-                    </div>
-                    <div className="match-score">
-                      {partido.golesLocal} - {partido.golesVisitante}
-                    </div>
-                    <div className="match-team">
-                      <span>{partido.nombreVisitante}</span>
-                      <span className="match-team-color" style={{ background: partido.colorVisitante }} />
-                    </div>
+            {torneo.partidos.map(partido => (
+              <div key={partido.id} className={`match-card ${partido.estado}`}>
+                <div className="match-teams">
+                  <div className="match-team">
+                    <span className="match-team-color" style={{ background: partido.colorLocal }} />
+                    <span>{partido.nombreLocal}</span>
                   </div>
-                  <div className="match-meta">
-                    <span className={`match-badge ${partido.estado}`}>
-                      {partido.estado === 'finalizado' ? '✓' : partido.estado === 'en_vivo' ? '🔴' : '⏰'} {partido.fase}
-                    </span>
-                    <span>Jornada {partido.jornada}</span>
-                    {partido.hora && <span>🕐 {partido.hora}</span>}
+                  <div className="match-score">
+                    {partido.golesLocal} - {partido.golesVisitante}
+                  </div>
+                  <div className="match-team">
+                    <span>{partido.nombreVisitante}</span>
+                    <span className="match-team-color" style={{ background: partido.colorVisitante }} />
                   </div>
                 </div>
-              ))
-            )}
+                <div className="match-meta">
+                  <span className={`match-badge ${partido.estado}`}>
+                    {partido.estado === 'finalizado' ? '✓' : partido.estado === 'en_vivo' ? '🔴' : '⏰'} {partido.fase}
+                  </span>
+                  <span>Jornada {partido.jornada}</span>
+                  {partido.hora && <span>🕐 {partido.hora}</span>}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
         <footer className="footer">
           <div className="footer-content">
-            <a href="/" className="nav-logo" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
+            <span className="nav-logo" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
               <span className="nav-logo-icon">⚡</span>
               <span className="nav-logo-text">FutsalFixture</span>
-            </a>
-            <p>Crea tus fixtures de futsal gratis</p>
-            <Link href="/" className="btn btn-primary mt-2">
-              ⚡ Crear mi Fixture
-            </Link>
+            </span>
+            <p>Actualiza automáticamente cada 5 segundos</p>
           </div>
         </footer>
       </div>
