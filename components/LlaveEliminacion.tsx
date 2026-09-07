@@ -296,7 +296,7 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
               const octavosC1 = getPartidosOctavosCancha1();
               const octavosC2 = getPartidosOctavosCancha2();
               return (
-                <div key={fase} style={{ display: 'flex', gap: 30 }}>
+                <div key={fase} style={{ display: 'flex', flexDirection: 'column', gap: 30 }}>
                   <div className="bracket-round">
                     <div className="bracket-round-title">🏟️ Cancha 1</div>
                     <div className="bracket-matches">
