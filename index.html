@@ -74,7 +74,7 @@
                 <li><a href="#como-funciona">Cómo Funciona</a></li>
                 <li><a href="#precios">Precios</a></li>
                 <li><a href="#testimonios">Testimonios</a></li>
-                <li><a href="#contacto" class="nav-cta">Crear mi liga</a></li>
+                <li><a href="#" class="nav-cta" onclick="openModal()">Crear mi liga</a></li>
             </ul>
 
             <button class="menu-toggle" aria-label="Abrir menú" aria-expanded="false">
@@ -108,7 +108,7 @@
             </p>
 
             <div class="hero-buttons reveal reveal-delay-3">
-                <a href="#contacto" class="btn btn-primary btn-large pulse">
+                <a href="#" class="btn btn-primary btn-large pulse" onclick="openModal()">
                     ⚡ Crear mi liga gratis
                 </a>
                 <a href="#como-funciona" class="btn btn-secondary btn-large">
@@ -390,7 +390,7 @@
                         <li><span class="check">✓</span> Registro de resultados</li>
                     </ul>
 
-                    <a href="#contacto" class="btn btn-secondary" style="width: 100%; justify-content: center;">
+                    <a href="#" class="btn btn-secondary" style="width: 100%; justify-content: center;" onclick="openModal(event)">
                         Empezar gratis
                     </a>
                 </div>
@@ -415,7 +415,7 @@
                         <li><span class="check">✓</span> Exportar datos a Excel</li>
                     </ul>
 
-                    <a href="#contacto" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                    <a href="#" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="openModal(event, 'pro')">
                         ⚡ Suscribirme al PRO
                     </a>
                 </div>
@@ -491,11 +491,10 @@
                 <p>Crea tu cuenta gratuita y ten tu torneo armado en menos de 2 minutos. Sin tarjeta, sin trámites.</p>
 
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <a href="#" class="btn btn-primary btn-large pulse">
+                    <a href="#" class="btn btn-primary btn-large pulse" onclick="openModal()">
                         ⚡ Crear mi liga gratis
                     </a>
-                    <a href="https://wa.me/51999999999?text=Hola,%20quiero%20información%20sobre%20Fútbol%20App"
-                        target="_blank" rel="noopener" class="btn btn-whatsapp btn-large">
+                    <a href="https://wa.me/51936400532?text=Hola,%20quiero%20información%20sobre%20Fútbol%20App" target="_blank" rel="noopener" class="btn btn-whatsapp btn-large">
                         💬 Escríbenos por WhatsApp
                     </a>
                 </div>
@@ -504,6 +503,115 @@
             </div>
         </div>
     </section>
+
+    <!-- ========== MODAL DE REGISTRO ========== -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal-container glass">
+            <button class="modal-close" aria-label="Cerrar">&times;</button>
+
+            <!-- Step 1: Formulario -->
+            <div class="modal-step" id="modalStep1">
+                <div class="modal-header">
+                    <span style="font-size: 2.5rem;">⚽</span>
+                    <h2 class="modal-title">Crea tu Liga Gratis</h2>
+                    <p class="modal-subtitle">Completa tus datos y en 2 minutos tendrás tu torneo listo</p>
+                </div>
+
+                <form id="registerForm" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="nombre">Tu nombre</label>
+                        <input type="text" id="nombre" name="nombre" placeholder="Ej: Carlos Ramos" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="celular">Celular (WhatsApp)</label>
+                        <div class="input-prefix">
+                            <span class="prefix-text">+51</span>
+                            <input type="tel" id="celular" name="celular" placeholder="999 999 999" pattern="[0-9]{9}" maxlength="9" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="torneo">Nombre de tu torneo</label>
+                        <input type="text" id="torneo" name="torneo" placeholder="Ej: Copa del Barrio 2024" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="equipos">N° de equipos</label>
+                            <select id="equipos" name="equipos">
+                                <option value="4">4 equipos</option>
+                                <option value="6">6 equipos</option>
+                                <option value="8" selected>8 equipos</option>
+                                <option value="10">10 equipos</option>
+                                <option value="12">12 equipos</option>
+                                <option value="16">16 equipos</option>
+                                <option value="20">20+ equipos (PRO)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="formato">Formato</label>
+                            <select id="formato" name="formato">
+                                <option value="liga">Liga (todos contra todos)</option>
+                                <option value="grupos">Fase de grupos</option>
+                                <option value="eliminacion">Eliminación directa</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="planSeleccionado" name="plan" value="gratis">
+
+                    <button type="submit" class="btn btn-primary btn-large" style="width: 100%; justify-content: center; margin-top: 0.5rem;">
+                        ⚡ Crear mi torneo ahora
+                    </button>
+
+                    <p class="modal-note">🔒 Sin tarjeta de crédito · Tus datos están seguros</p>
+                </form>
+            </div>
+
+            <!-- Step 2: Éxito -->
+            <div class="modal-step" id="modalStep2" style="display: none;">
+                <div class="modal-success">
+                    <div class="success-icon">🎉</div>
+                    <h2 class="modal-title">¡Tu torneo está listo!</h2>
+                    <p class="modal-subtitle">Hemos creado <strong id="torneoNombre"></strong> con éxito.</p>
+
+                    <div class="success-summary glass-card" style="margin: 1.5rem 0; text-align: left;">
+                        <div class="summary-row">
+                            <span>📋 Torneo:</span>
+                            <strong id="summaryTorneo"></strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>👥 Equipos:</span>
+                            <strong id="summaryEquipos"></strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>🏆 Formato:</span>
+                            <strong id="summaryFormato"></strong>
+                        </div>
+                        <div class="summary-row">
+                            <span>📱 WhatsApp:</span>
+                            <strong id="summaryCelular"></strong>
+                        </div>
+                    </div>
+
+                    <p style="color: var(--color-text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                        Te contactaremos por WhatsApp en los próximos minutos para configurar tu torneo.
+                    </p>
+
+                    <div style="display: flex; gap: 0.75rem; flex-direction: column;">
+                        <a id="whatsappLink" href="#" target="_blank" rel="noopener" class="btn btn-whatsapp" style="justify-content: center;">
+                            💬 Ir a WhatsApp ahora
+                        </a>
+                        <button onclick="closeModal()" class="btn btn-secondary" style="justify-content: center;">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ========== FOOTER ========== -->
     <footer class="footer">
@@ -517,7 +625,7 @@
                 <li><a href="#como-funciona">Cómo Funciona</a></li>
                 <li><a href="#precios">Precios</a></li>
                 <li><a href="#testimonios">Testimonios</a></li>
-                <li><a href="https://wa.me/51999999999" target="_blank" rel="noopener">WhatsApp</a></li>
+                <li><a href="https://wa.me/51936400532" target="_blank" rel="noopener">WhatsApp</a></li>
             </ul>
         </div>
 
