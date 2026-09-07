@@ -101,7 +101,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
     ronda1.push({
       id: generarId(),
       jornada: 1,
-      fase: nombresRondas[numRondas - 1],
+      fase: nombresRondas[0], // Primera fase (Octavos, Cuartos, etc.)
       local: local.id,
       visitante: visitante.id,
       nombreLocal: local.nombre,
@@ -122,7 +122,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
     ronda1.push({
       id: generarId(),
       jornada: 1,
-      fase: nombresRondas[numRondas - 1],
+      fase: nombresRondas[0], // Primera fase
       local: equipoBye.id,
       visitante: '',
       nombreLocal: equipoBye.nombre,
@@ -146,7 +146,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
     const rondaAnterior = partidosPorRonda[ronda - 2];
     const numPartidos = Math.ceil(rondaAnterior.length / 2);
     const rondaActual: Partido[] = [];
-    const nombreFase = nombresRondas[numRondas - ronda];
+    const nombreFase = nombresRondas[ronda - 1]; // ronda 2 = nombresRondas[1] = Cuartos, etc.
 
     let idxAnterior = 0;
     for (let i = 0; i < numPartidos; i++) {
