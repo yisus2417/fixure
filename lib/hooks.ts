@@ -3,11 +3,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Usuario, Torneo } from './types';
 import { generarShareHash } from './fixture';
-import { v4 as uuidv4 } from 'uuid';
 
 const USUARIOS_KEY = 'futsal_usuarios';
 const TORNEOS_KEY = 'futsal_torneos';
 const CURRENT_USER_KEY = 'futsal_current_user';
+
+function generarId(): string {
+  if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
+}
 
 /**
  * Hook para gestionar usuarios (auth simple)
@@ -32,7 +38,7 @@ export function useAuth() {
     }
 
     const nuevoUsuario: Usuario = {
-      id: uuidv4(),
+      id: generarId(),
       email,
       nombre,
       createdAt: Date.now()
@@ -92,7 +98,7 @@ export function useTorneos() {
     if (!usuario) throw new Error('No hay usuario');
 
     const nuevoTorneo: Torneo = {
-      id: uuidv4(),
+      id: generarId(),
       nombre,
       formato,
       modalidad,

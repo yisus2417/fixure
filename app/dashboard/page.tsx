@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Usuario, Torneo, Equipo, Partido } from '@/lib/types';
 import { generarLigaRoundRobin, generarEliminacion, generarGrupos, calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
-import { v4 as uuidv4 } from 'uuid';
+
+function generarId(): string {
+  if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -35,7 +41,7 @@ export default function Dashboard() {
     if (!usuario) return;
 
     const nuevoTorneo: Torneo = {
-      id: uuidv4(),
+      id: generarId(),
       nombre,
       formato,
       modalidad,
@@ -46,7 +52,7 @@ export default function Dashboard() {
       partidos: [],
       estado: 'proximo',
       creadoEn: Date.now(),
-      comparteHash: uuidv4().split('-')[0] + uuidv4().split('-')[0]
+      comparteHash: generarId().split('-')[0] + generarId().split('-')[0]
     };
 
     guardarTorneos([...torneos, nuevoTorneo]);

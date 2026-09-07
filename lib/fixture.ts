@@ -1,5 +1,11 @@
-import { Equipo, Partido, FormatoTorneo } from './types';
-import { v4 as uuidv4 } from 'uuid';
+import { Equipo, Partido } from './types';
+
+function generarId(): string {
+  if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
+}
 
 /**
  * Genera fixture round-robin (liga) para un número par/impar de equipos
@@ -23,7 +29,7 @@ export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
 
       if (local.id !== 'BYE' && visitante.id !== 'BYE') {
         fixture.push({
-          id: uuidv4(),
+          id: generarId(),
           jornada: j + 1,
           fase: 'Liga Regular',
           local: local.id,
@@ -82,7 +88,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
 
     if (local && visitante) {
       fixture.push({
-        id: uuidv4(),
+        id: generarId(),
         jornada: 1,
         fase: roundName,
         local: local.id,
@@ -99,7 +105,7 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
     } else if (local && !visitante) {
       // Bye - avanza directo
       fixture.push({
-        id: uuidv4(),
+        id: generarId(),
         jornada: 1,
         fase: roundName,
         local: local.id,
@@ -162,7 +168,7 @@ export function generarGrupos(equipos: Equipo[], numGrupos: number): Partido[] {
  * Genera hash de compartir único
  */
 export function generarShareHash(): string {
-  return uuidv4().split('-')[0] + uuidv4().split('-')[0];
+  return generarId().split('-')[0] + generarId().split('-')[0];
 }
 
 /**

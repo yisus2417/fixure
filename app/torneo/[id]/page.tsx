@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Torneo, Equipo, Partido } from '@/lib/types';
 import { generarLigaRoundRobin, generarEliminacion, generarGrupos, calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
-import { v4 as uuidv4 } from 'uuid';
+
+function generarId(): string {
+  if (typeof window !== 'undefined' && window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
+}
 
 export default function GestionarTorneo({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -51,7 +57,7 @@ export default function GestionarTorneo({ params }: { params: Promise<{ id: stri
   const agregarEquipo = (nombre: string, color: string) => {
     if (!torneo) return;
     const nuevo: Equipo = {
-      id: uuidv4(),
+      id: generarId(),
       nombre,
       color,
       estadisticas: { jugados: 0, ganados: 0, empatados: 0, perdidos: 0, golesFavor: 0, golesContra: 0, puntos: 0 }
