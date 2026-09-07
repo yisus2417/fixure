@@ -44,7 +44,7 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
 
   useEffect(() => {
     cargarTorneo();
-    const interval = setInterval(cargarTorneo, 5000);
+    const interval = setInterval(cargarTorneo, 1000);
     return () => clearInterval(interval);
   }, [hash]);
 
