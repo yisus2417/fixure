@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planes - FútbolApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar scrolled">
+    <div class="nav-container">
+      <a href="/dashboard" class="nav-logo">
+        <span class="nav-logo-icon">⚡</span>
+        <span class="nav-logo-text">FútbolApp</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/dashboard">← Volver</a></li>
+        <li><a href="#" id="logoutBtn" style="color: var(--led-red);">Salir</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="dashboard">
+    <div class="dashboard-container">
+      <div class="text-center mb-3">
+        <h1 style="font-size: 2.5rem; font-weight: 900;">Planes y Precios</h1>
+        <p class="text-muted">Elige el plan que mejor se ajuste a tus necesidades</p>
+        <div id="planBadge" class="mt-2"></div>
+      </div>
+
+      <div id="alert"></div>
+
+      <div class="plans-grid">
+        <div class="plan-card">
+          <div class="plan-name">Gratis</div>
+          <div class="plan-price"><span class="currency">S/</span>0</div>
+          <div class="plan-period">Para siempre</div>
+          <ul class="plan-features">
+            <li>Hasta 3 torneos</li>
+            <li>Equipos ilimitados</li>
+            <li>Fixture automático</li>
+            <li>Tabla en tiempo real</li>
+            <li>Link público compartible</li>
+            <li>Goleadores y tarjetas</li>
+          </ul>
+          <button class="btn btn-secondary w-full" disabled style="justify-content: center;">
+            Tu plan actual
+          </button>
+        </div>
+
+        <div class="plan-card featured">
+          <div class="plan-name">PRO</div>
+          <div class="plan-price"><span class="currency">S/</span>20</div>
+          <div class="plan-period">por mes</div>
+          <ul class="plan-features">
+            <li>Torneos ILIMITADOS</li>
+            <li>Todo lo del plan gratis</li>
+            <li>Soporte prioritario</li>
+            <li>Sin marca de agua</li>
+            <li>Estadísticas avanzadas</li>
+            <li>Exportar a Excel</li>
+            <li>Notificaciones push</li>
+          </ul>
+          <button class="btn btn-success w-full" id="btnPro" style="justify-content: center;">
+            ⚡ Hacerme PRO
+          </button>
+        </div>
+      </div>
+
+      <div class="section mt-3">
+        <h2 class="text-center mb-3">💳 Métodos de Pago</h2>
+        <div class="features-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 700px; margin: 0 auto;">
+          <div class="feature-card text-center">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📱</div>
+            <h3>Yape</h3>
+            <p class="text-muted">Escanea el QR o transfiere al número:</p>
+            <p style="font-size: 1.4rem; font-weight: 800; color: var(--led-green); margin: 0.5rem 0;">+51 936 400 532</p>
+            <p class="text-muted" style="font-size: 0.85rem;">A nombre de: Christian Gil</p>
+          </div>
+          <div class="feature-card text-center">
+            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏦</div>
+            <h3>Plin</h3>
+            <p class="text-muted">Transfiere al mismo número:</p>
+            <p style="font-size: 1.4rem; font-weight: 800; color: var(--led-green); margin: 0.5rem 0;">+51 936 400 532</p>
+            <p class="text-muted" style="font-size: 0.85rem;">A nombre de: Christian Gil</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Pago -->
+  <div class="modal-overlay" id="modalPago">
+    <div class="modal-container">
+      <button class="modal-close" onclick="Modal.close('modalPago')">×</button>
+      <h2 class="modal-title">⚡ Activar Plan PRO</h2>
+      <p class="modal-subtitle">Realiza el pago y registra tu comprobante</p>
+
+      <div class="alert alert-info">
+        <strong>📱 Yape/Plin:</strong> +51 936 400 532<br>
+        <strong>Monto:</strong> S/ 20.00
+      </div>
+
+      <form id="formPago">
+        <div class="form-group">
+          <label>Método de pago</label>
+          <select id="metodo" required>
+            <option value="yape">Yape</option>
+            <option value="plin">Plin</option>
+            <option value="transferencia">Transferencia Bancaria</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Número de operación</label>
+          <input type="text" id="operacion" placeholder="Ej: 123456" required>
+        </div>
+        <div class="form-group">
+          <label>Notas (opcional)</label>
+          <textarea id="notas" rows="2" placeholder="Comprobante, fecha, etc."></textarea>
+        </div>
+        <button type="submit" class="btn btn-success w-full" style="justify-content: center;">
+          📩 Enviar Comprobante
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireAuth()) {}
+
+    const user = API.getUser();
+    if (user) {
+      const badge = document.getElementById('planBadge');
+      if (user.plan === 'pro') {
+        badge.innerHTML = '<span class="plan-badge pro">⚡ ERES PRO</span>';
+        document.getElementById('btnPro').disabled = true;
+        document.getElementById('btnPro').textContent = 'Ya eres PRO';
+      }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (confirm('¿Cerrar sesión?')) API.logout();
+    });
+
+    document.getElementById('btnPro').addEventListener('click', () => {
+      Modal.open('modalPago');
+    });
+
+    document.getElementById('formPago').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        metodo: document.getElementById('metodo').value,
+        operacion: document.getElementById('operacion').value.trim(),
+        notas: document.getElementById('notas').value.trim()
+      };
+      try {
+        await API.post('/pagos/solicitar', data);
+        Toast.show('✓ Comprobante enviado. Te avisaremos cuando se active.');
+        Modal.close('modalPago');
+        e.target.reset();
+      } catch (err) {
+        Toast.show(err.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>

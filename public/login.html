@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar Sesión - FútbolApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="nav-logo-icon">⚡</span>
+        <span class="nav-logo-text">FútbolApp</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <h1 class="auth-title">Bienvenido de vuelta</h1>
+      <p class="auth-subtitle">Ingresa para gestionar tus torneos</p>
+
+      <div id="alert"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="tu@email.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full" style="justify-content: center; margin-top: 0.5rem;" id="submitBtn">
+          Iniciar Sesión
+        </button>
+      </form>
+
+      <p class="auth-link">
+        ¿No tienes cuenta? <a href="/registro">Regístrate gratis</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    // Si ya está logueado, redirigir
+    if (API.getToken()) {
+      window.location.href = '/dashboard';
+    }
+
+    const form = document.getElementById('loginForm');
+    const alertBox = document.getElementById('alert');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function showAlert(msg, type = 'error') {
+      alertBox.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="loading"></span> Ingresando...';
+
+      try {
+        const data = await API.post('/auth/login', { email, password });
+        API.setToken(data.token);
+        API.setUser(data.user);
+        Toast.show('✓ Bienvenido ' + data.user.nombre);
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 800);
+      } catch (err) {
+        showAlert(err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Iniciar Sesión';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torneo - FútbolApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <div class="public-page">
+    <div class="public-container">
+      <div class="public-header">
+        <div class="hero-badge" style="margin-bottom: 1rem;">
+          <span>⚽ TORNEO EN VIVO</span>
+        </div>
+        <h1 class="public-torneo-title" id="torneoNombre">Cargando...</h1>
+        <p class="text-muted" id="torneoSubtitle"></p>
+        <div class="public-share">
+          <button class="share-btn" onclick="compartir()">🔗 Copiar Link</button>
+          <button class="share-btn whatsapp" onclick="compartirWA()">💬 Compartir por WhatsApp</button>
+          <a class="share-btn" href="/" target="_blank">⚡ Crear mi Torneo</a>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="posiciones">📊 Posiciones</button>
+        <button class="tab" data-tab="partidos">⚽ Partidos</button>
+        <button class="tab" data-tab="goleadores">⚽ Goleadores</button>
+        <button class="tab" data-tab="tarjetas">🟨 Tarjetas</button>
+      </div>
+
+      <div id="tab-posiciones" class="tab-content"></div>
+      <div id="tab-partidos" class="tab-content hidden"></div>
+      <div id="tab-goleadores" class="tab-content hidden"></div>
+      <div id="tab-tarjetas" class="tab-content hidden"></div>
+
+      <footer class="footer" style="margin-top: 4rem;">
+        <div class="footer-content">
+          <div class="nav-logo" style="justify-content: center; margin-bottom: 1rem;">
+            <span class="nav-logo-icon">⚡</span>
+            <span class="nav-logo-text">FútbolApp</span>
+          </div>
+          <p>Plataforma profesional de gestión de torneos</p>
+          <a href="/" class="btn btn-primary mt-2" style="display: inline-flex;">
+            ⚡ Crear mi Torneo Gratis
+          </a>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const publicoId = window.location.pathname.split('/').pop();
+    let torneo = null;
+    let equipos = [];
+    let partidos = [];
+
+    async function cargar() {
+      try {
+        const data = await API.get(`/public/t/${publicoId}`);
+        torneo = data.torneo;
+        equipos = data.equipos;
+        partidos = data.partidos;
+
+        document.title = `${torneo.nombre} - FútbolApp`;
+        document.getElementById('torneoNombre').textContent = torneo.nombre;
+        document.getElementById('torneoSubtitle').textContent = 
+          `${torneo.formato} · ${torneo.modalidad} · ${equipos.length} equipos` +
+          (torneo.ciudad ? ` · ${torneo.ciudad}` : '');
+
+        renderPosiciones();
+        renderPartidos();
+        await renderGoleadores();
+        await renderTarjetas();
+      } catch (err) {
+        document.getElementById('tab-posiciones').innerHTML = 
+          `<div class="alert alert-error">Torneo no encontrado o no es público</div>`;
+      }
+    }
+
+    function renderPosiciones() {
+      const cont = document.getElementById('tab-posiciones');
+      if (equipos.length === 0) {
+        cont.innerHTML = '<div class="empty-state"><p>Aún no hay equipos</p></div>';
+        return;
+      }
+      const ordenados = [...equipos].sort((a, b) => {
+        if (b.estadisticas.puntos !== a.estadisticas.puntos) return b.estadisticas.puntos - a.estadisticas.puntos;
+        if (b.estadisticas.diferencia !== a.estadisticas.diferencia) return b.estadisticas.diferencia - a.estadisticas.diferencia;
+        if (b.estadisticas.golesFavor !== a.estadisticas.golesFavor) return b.estadisticas.golesFavor - a.estadisticas.golesFavor;
+        return a.nombre.localeCompare(b.nombre);
+      });
+
+      cont.innerHTML = `
+        <table class="standings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Equipo</th>
+              <th>JJ</th>
+              <th>JG</th>
+              <th>JE</th>
+              <th>JP</th>
+              <th>GF</th>
+              <th>GC</th>
+              <th>DG</th>
+              <th>PTS</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ordenados.map((e, i) => `
+              <tr>
+                <td class="pos-cell">${i + 1}</td>
+                <td>
+                  <div class="team-cell">
+                    <span class="team-color-dot" style="background:${e.color}"></span>
+                    ${e.nombre}
+                  </div>
+                </td>
+                <td>${e.estadisticas.jugados}</td>
+                <td>${e.estadisticas.ganados}</td>
+                <td>${e.estadisticas.empatados}</td>
+                <td>${e.estadisticas.perdidos}</td>
+                <td>${e.estadisticas.golesFavor}</td>
+                <td>${e.estadisticas.golesContra}</td>
+                <td>${e.estadisticas.diferencia > 0 ? '+' : ''}${e.estadisticas.diferencia}</td>
+                <td class="points-cell">${e.estadisticas.puntos}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderPartidos() {
+      const cont = document.getElementById('tab-partidos');
+      if (partidos.length === 0) {
+        cont.innerHTML = '<div class="empty-state"><p>Aún no hay partidos</p></div>';
+        return;
+      }
+      const grouped = {};
+      partidos.forEach(p => {
+        const key = `Jornada ${p.jornada}${p.fase && p.fase !== 'Fase de Liga' ? ' · ' + p.fase : ''}${p.grupo ? ' · Grupo ' + p.grupo : ''}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(p);
+      });
+
+      cont.innerHTML = Object.entries(grouped).map(([key, ps]) => `
+        <h3 class="mb-2" style="color: var(--circuit-cyan); font-size: 1.1rem; margin-top: 2rem;">${key}</h3>
+        ${ps.map(p => `
+          <div class="match-card ${p.estado}">
+            <div class="match-teams">
+              <div class="match-team">
+                <span class="match-team-color" style="background:${equipos.find(e=>e._id===p.local)?.color || '#3b82f6'}"></span>
+                <span>${p.nombreLocal}</span>
+              </div>
+              <div class="match-score">
+                ${p.golesLocal} - ${p.golesVisitante}
+              </div>
+              <div class="match-team">
+                <span>${p.nombreVisitante}</span>
+                <span class="match-team-color" style="background:${equipos.find(e=>e._id===p.visitante)?.color || '#3b82f6'}"></span>
+              </div>
+            </div>
+            <div class="match-meta">
+              <span class="match-badge ${p.estado}">${p.estado === 'en_vivo' ? '🔴 EN VIVO' : p.estado === 'finalizado' ? '✓ FINALIZADO' : '⏰ PENDIENTE'}</span>
+              ${p.fecha ? `<span>${formatearFecha(p.fecha)}</span>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      `).join('');
+    }
+
+    async function renderGoleadores() {
+      const cont = document.getElementById('tab-goleadores');
+      try {
+        const data = await API.get(`/public/t/${publicoId}/goleadores`);
+        if (data.jugadores.length === 0) {
+          cont.innerHTML = '<div class="empty-state"><p>Aún no hay goles registrados</p></div>';
+          return;
+        }
+        cont.innerHTML = data.jugadores.map((j, i) => `
+          <div class="match-card">
+            <div class="flex justify-between items-center">
+              <div>
+                <strong style="font-size: 1.2rem; color: var(--led-green);">#${i + 1}</strong>
+                <strong>${j.nombre}</strong>
+                <span class="text-muted"> · ${j.equipo?.nombre || ''}</span>
+                ${j.dorsal ? `<span class="text-muted"> · #${j.dorsal}</span>` : ''}
+              </div>
+              <div style="font-size: 1.5rem; font-weight: 900; color: var(--led-green);">
+                ⚽ ${j.estadisticas.goles}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        cont.innerHTML = '<p class="text-muted">Sin datos aún</p>';
+      }
+    }
+
+    async function renderTarjetas() {
+      const cont = document.getElementById('tab-tarjetas');
+      try {
+        const data = await API.get(`/public/t/${publicoId}/tarjetas`);
+        const conTarjetas = data.jugadores.filter(j => j.estadisticas.amarillas > 0 || j.estadisticas.rojas > 0);
+        if (conTarjetas.length === 0) {
+          cont.innerHTML = '<div class="empty-state"><p>Sin tarjetas registradas</p></div>';
+          return;
+        }
+        cont.innerHTML = conTarjetas.map((j, i) => `
+          <div class="match-card">
+            <div class="flex justify-between items-center">
+              <div>
+                <strong>${j.nombre}</strong>
+                <span class="text-muted"> · ${j.equipo?.nombre || ''}</span>
+              </div>
+              <div class="flex gap-2">
+                ${j.estadisticas.amarillas > 0 ? `<span style="background: #eab308; color: black; padding: 0.2rem 0.6rem; border-radius: 50px; font-weight: 700;">🟨 ${j.estadisticas.amarillas}</span>` : ''}
+                ${j.estadisticas.rojas > 0 ? `<span style="background: #ef4444; color: white; padding: 0.2rem 0.6rem; border-radius: 50px; font-weight: 700;">🟥 ${j.estadisticas.rojas}</span>` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        cont.innerHTML = '<p class="text-muted">Sin datos aún</p>';
+      }
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.getAttribute('data-tab')).classList.remove('hidden');
+      });
+    });
+
+    function compartir() {
+      Share.copyLink(window.location.href);
+    }
+
+    function compartirWA() {
+      Share.whatsapp(`⚽ Mira el torneo "${torneo.nombre}" en FútbolApp. Tabla en vivo, goleadores y resultados:`, window.location.href);
+    }
+
+    cargar();
+  </script>
+</body>
+</html>

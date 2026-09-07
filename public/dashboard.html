@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - FútbolApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+  <nav class="navbar scrolled">
+    <div class="nav-container">
+      <a href="/dashboard" class="nav-logo">
+        <span class="nav-logo-icon">⚡</span>
+        <span class="nav-logo-text">FútbolApp</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/dashboard">Mis Torneos</a></li>
+        <li><a href="/planes">Planes</a></li>
+        <li><a href="#" id="userMenu">👤 <span id="userName">Usuario</span></a></li>
+        <li><a href="#" id="logoutBtn" style="color: var(--led-red);">Salir</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="dashboard">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Hola, <span id="userNameTitle">Usuario</span> 👋</h1>
+          <p class="text-muted">Gestiona tus torneos de fútbol</p>
+        </div>
+        <div class="dashboard-actions">
+          <span class="plan-badge" id="planBadge">FREE</span>
+          <button class="btn btn-primary" id="btnNuevoTorneo">
+            ➕ Nuevo Torneo
+          </button>
+        </div>
+      </div>
+
+      <div id="alert"></div>
+
+      <div id="torneosList"></div>
+    </div>
+  </div>
+
+  <!-- Modal Nuevo Torneo -->
+  <div class="modal-overlay" id="modalNuevoTorneo">
+    <div class="modal-container">
+      <button class="modal-close" onclick="Modal.close('modalNuevoTorneo')">×</button>
+      <h2 class="modal-title">⚡ Crear Nuevo Torneo</h2>
+      <p class="modal-subtitle">Configura los datos básicos de tu torneo</p>
+
+      <form id="formNuevoTorneo">
+        <div class="form-group">
+          <label for="tnombre">Nombre del Torneo *</label>
+          <input type="text" id="tnombre" placeholder="Ej: Copa del Barrio 2024" required>
+        </div>
+
+        <div class="form-group">
+          <label for="tdescripcion">Descripción (opcional)</label>
+          <textarea id="tdescripcion" rows="2" placeholder="Torneo relámpago del barrio..." maxlength="280"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tformato">Formato *</label>
+            <select id="tformato" required>
+              <option value="liga">Liga (todos contra todos)</option>
+              <option value="eliminacion">Eliminación Directa</option>
+              <option value="grupos">Fase de Grupos</option>
+              <option value="doble_eliminacion">Doble Eliminación</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="tmodalidad">Modalidad</label>
+            <select id="tmodalidad">
+              <option value="futbol7">Fútbol 7</option>
+              <option value="futbol11">Fútbol 11</option>
+              <option value="futbol5">Fútbol 5</option>
+              <option value="futsal">Futsal</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tnumGrupos">N° de Grupos (solo fase de grupos)</label>
+            <input type="number" id="tnumGrupos" min="2" max="8" value="2">
+          </div>
+          <div class="form-group">
+            <label for="tciudad">Ciudad</label>
+            <input type="text" id="tciudad" placeholder="Lima">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tfechaInicio">Fecha de Inicio</label>
+          <input type="date" id="tfechaInicio">
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full" style="justify-content: center;" id="btnCrearTorneo">
+          ⚡ Crear Torneo
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    if (!requireAuth()) {
+      // redirigido
+    }
+
+    const user = API.getUser();
+    if (user) {
+      document.getElementById('userName').textContent = user.nombre;
+      document.getElementById('userNameTitle').textContent = user.nombre;
+      const badge = document.getElementById('planBadge');
+      badge.textContent = user.plan === 'pro' ? '⚡ PRO' : 'FREE';
+      badge.classList.add(user.plan === 'pro' ? 'pro' : 'free');
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (confirm('¿Cerrar sesión?')) API.logout();
+    });
+
+    document.getElementById('btnNuevoTorneo').addEventListener('click', () => {
+      Modal.open('modalNuevoTorneo');
+    });
+
+    // Cargar torneos
+    async function cargarTorneos() {
+      const list = document.getElementById('torneosList');
+      list.innerHTML = '<div class="text-center"><span class="loading"></span> Cargando torneos...</div>';
+
+      try {
+        const data = await API.get('/torneos');
+        if (data.torneos.length === 0) {
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🏆</div>
+              <h3>Aún no tienes torneos</h3>
+              <p>¡Crea tu primer torneo y empieza a organizarlo!</p>
+              <button class="btn btn-primary mt-3" onclick="Modal.open('modalNuevoTorneo')">
+                ➕ Crear mi Primer Torneo
+              </button>
+            </div>
+          `;
+          return;
+        }
+
+        list.innerHTML = '<div class="torneos-grid">' + data.torneos.map(t => `
+          <div class="torneo-card" onclick="window.location.href='/torneo/${t._id}'">
+            <h3>${t.nombre}</h3>
+            <div class="torneo-info">
+              <span>📅 ${t.formato}</span>
+              <span>⚽ ${t.modalidad.replace('futbol', 'F')}</span>
+              <span>${t.estado === 'activo' ? '🟢' : t.estado === 'finalizado' ? '⚫' : '🟡'} ${t.estado}</span>
+            </div>
+            ${t.descripcion ? `<p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0.5rem;">${t.descripcion}</p>` : ''}
+            <div class="torneo-stats">
+              <div>
+                <strong>${t.numEquipos || 0}</strong>
+                <span class="text-muted">Equipos</span>
+              </div>
+              <div>
+                <strong>${t.ciudad || 'Perú'}</strong>
+                <span class="text-muted">Ciudad</span>
+              </div>
+              <div>
+                <strong>${new Date(t.createdAt).toLocaleDateString('es-PE')}</strong>
+                <span class="text-muted">Creado</span>
+              </div>
+            </div>
+            <div class="torneo-link" onclick="event.stopPropagation(); window.open('/publico/${t.publicoId}', '_blank')">
+              🔗 Ver página pública
+            </div>
+          </div>
+        `).join('') + '</div>';
+      } catch (err) {
+        list.innerHTML = `<div class="alert alert-error">Error: ${err.message}</div>`;
+      }
+    }
+
+    // Crear torneo
+    const form = document.getElementById('formNuevoTorneo');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const alertBox = document.getElementById('alert');
+      const btn = document.getElementById('btnCrearTorneo');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Creando...';
+
+      const data = {
+        nombre: document.getElementById('tnombre').value.trim(),
+        descripcion: document.getElementById('tdescripcion').value.trim(),
+        formato: document.getElementById('tformato').value,
+        modalidad: document.getElementById('tmodalidad').value,
+        numGrupos: parseInt(document.getElementById('tnumGrupos').value) || 2,
+        ciudad: document.getElementById('tciudad').value.trim(),
+        fechaInicio: document.getElementById('tfechaInicio').value || null
+      };
+
+      try {
+        const result = await API.post('/torneos', data);
+        Toast.show('✓ Torneo creado');
+        API.setUser({ ...user, torneosCreados: user.torneosCreados + 1 });
+        Modal.close('modalNuevoTorneo');
+        form.reset();
+        setTimeout(() => {
+          window.location.href = `/torneo/${result.torneo._id}`;
+        }, 800);
+      } catch (err) {
+        alertBox.innerHTML = `<div class="alert alert-error">${err.message}</div>`;
+        btn.disabled = false;
+        btn.textContent = '⚡ Crear Torneo';
+      }
+    });
+
+    cargarTorneos();
+  </script>
+</body>
+</html>
