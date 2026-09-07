@@ -1,27 +1,25 @@
 'use client';
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Torneo, Equipo } from '@/lib/types';
 import { calcularEstadisticas, ordenarEquipos } from '@/lib/fixture';
 
-export default function VistaPublica({ params }: { params: Promise<{ hash: string }> }) {
-  const { hash } = use(params);
+export default function VistaPublica({ params }: { params: { hash: string } }) {
+  const { hash } = params;
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'tabla' | 'partidos'>('tabla');
 
   useEffect(() => {
-    // Buscar en localStorage de todos los usuarios
     const usuarios = JSON.parse(localStorage.getItem('futsal_usuarios') || '[]');
-    
+
     for (const user of usuarios) {
       const stored = localStorage.getItem(`futsal_torneos_${user.id}`);
       if (stored) {
         const torneos: Torneo[] = JSON.parse(stored);
         const encontrado = torneos.find(t => t.comparteHash === hash);
         if (encontrado) {
-          // Recalcular estadísticas
           const equiposConStats = calcularEstadisticas(encontrado.equipos, encontrado.partidos);
           setTorneo({ ...encontrado, equipos: equiposConStats });
           setLoading(false);
