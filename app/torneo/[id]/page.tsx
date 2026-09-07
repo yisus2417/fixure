@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Torneo, Equipo, Partido } from '@/lib/types';
-import { generarLigaRoundRobin, generarEliminacion, generarGrupos, calcularEstadisticas, ordenarEquipos, avanzarGanador, iniciarPartido, terminarPartido, actualizarMinuto } from '@/lib/fixture';
+import { generarLigaRoundRobin, generarEliminacion, generarGrupos, calcularEstadisticas, ordenarEquipos, avanzarGanador, iniciarPartido, terminarPartido, actualizarMarcador, actualizarTiempo, pasarEntreTiempo, iniciarSegundoTiempo } from '@/lib/fixture';
 import LlaveEliminacion from '@/components/LlaveEliminacion';
 
 function generarId(): string {
@@ -50,20 +50,25 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
   useEffect(() => {
     if (!torneo) return;
     const interval = setInterval(() => {
-      const ahora = new Date();
-      const partidosEnVivo = torneo.partidos.filter(p => p.estado === 'en_vivo' && p.horaInicio);
+      const partidosEnVivo = torneo.partidos.filter(p => p.estado === 'en_vivo' && p.tiempo !== 'entre_tiempo');
       if (partidosEnVivo.length === 0) return;
 
       let actualizado = false;
       const nuevosPartidos = torneo.partidos.map(p => {
-        if (p.estado === 'en_vivo' && p.horaInicio) {
-          const [h, m] = p.horaInicio.split(':').map(Number);
-          const inicio = new Date();
-          inicio.setHours(h, m, 0, 0);
-          const diffMin = Math.floor((ahora.getTime() - inicio.getTime()) / 60000);
-          if (diffMin !== p.minutoActual && diffMin >= 0 && diffMin <= 120) {
+        if (p.estado === 'en_vivo' && p.tiempo !== 'entre_tiempo') {
+          let nuevoMinuto = p.minutoActual || 0;
+          let nuevoSegundo = (p.segundoActual || 0) + 1;
+
+          if (nuevoSegundo >= 60) {
+            nuevoSegundo = 0;
+            nuevoMinuto++;
+          }
+
+          const limiteMinutos = p.tiempo === 'primer_tiempo' ? 20 : 40;
+
+          if (nuevoMinuto !== p.minutoActual || nuevoSegundo !== p.segundoActual) {
             actualizado = true;
-            return { ...p, minutoActual: diffMin };
+            return { ...p, minutoActual: nuevoMinuto, segundoActual: nuevoSegundo };
           }
         }
         return p;
@@ -72,7 +77,7 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
       if (actualizado) {
         guardar({ ...torneo, partidos: nuevosPartidos });
       }
-    }, 30000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [torneo]);
@@ -145,33 +150,9 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
     const partido = torneo.partidos.find(p => p.id === partidoId);
     if (!partido) return;
 
-    let partidosActualizados = torneo.partidos;
-
-    if (partido.estado === 'pendiente') {
-      partidosActualizados = iniciarPartido(partidosActualizados, partidoId);
-    }
-
-    partidosActualizados = partidosActualizados.map(p =>
-      p.id === partidoId
-        ? { ...p, golesLocal, golesVisitante }
-        : p
-    );
-
-    if (golesLocal >= 0 && golesVisitante >= 0) {
-      partidosActualizados = terminarPartido(partidosActualizados, partidoId);
-    }
-
-    if (torneo.formato === 'eliminacion') {
-      partidosActualizados = avanzarGanador(partidosActualizados, partidoId);
-    }
-
-    const actualizado = {
-      ...torneo,
-      partidos: partidosActualizados
-    };
-
-    const equiposConStats = calcularEstadisticas(actualizado.equipos, actualizado.partidos);
-    guardar({ ...actualizado, equipos: equiposConStats });
+    let partidosActualizados = actualizarMarcador(torneo.partidos, partidoId, golesLocal, golesVisitante);
+    const actualizado = { ...torneo, partidos: partidosActualizados };
+    guardar(actualizado);
   };
 
   const iniciarPartidoUI = (partidoId: string) => {
@@ -182,12 +163,33 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
     guardar(actualizado);
   };
 
+  const pasarEntreTiempoUI = (partidoId: string) => {
+    if (!torneo) return;
+    const partido = torneo.partidos.find(p => p.id === partidoId);
+    if (!partido || partido.estado !== 'en_vivo' || partido.tiempo !== 'primer_tiempo') return;
+    const actualizado = { ...torneo, partidos: pasarEntreTiempo(torneo.partidos, partidoId) };
+    guardar(actualizado);
+  };
+
+  const iniciarSegundoTiempoUI = (partidoId: string) => {
+    if (!torneo) return;
+    const partido = torneo.partidos.find(p => p.id === partidoId);
+    if (!partido || partido.estado !== 'en_vivo' || partido.tiempo !== 'entre_tiempo') return;
+    const actualizado = { ...torneo, partidos: iniciarSegundoTiempo(torneo.partidos, partidoId) };
+    guardar(actualizado);
+  };
+
   const terminarPartidoUI = (partidoId: string) => {
     if (!torneo) return;
     const partido = torneo.partidos.find(p => p.id === partidoId);
     if (!partido || partido.estado !== 'en_vivo') return;
     const actualizado = { ...torneo, partidos: terminarPartido(torneo.partidos, partidoId) };
-    guardar(actualizado);
+    if (torneo.formato === 'eliminacion') {
+      const conGanador = avanzarGanador(actualizado.partidos, partidoId);
+      guardar({ ...actualizado, partidos: conGanador });
+    } else {
+      guardar(actualizado);
+    }
   };
 
   const copiarLink = () => {
@@ -286,8 +288,10 @@ export default function GestionarTorneo({ params }: { params: { id: string } }) 
               <LlaveEliminacion
                 partidos={torneo.partidos}
                 faseActual=""
-                onActualizarResultado={(id, gl, gv) => registrarResultado(id, gl, gv)}
+                onActualizarMarcador={(id, gl, gv) => registrarResultado(id, gl, gv)}
                 onIniciarPartido={iniciarPartidoUI}
+                onPasarEntreTiempo={pasarEntreTiempoUI}
+                onIniciarSegundoTiempo={iniciarSegundoTiempoUI}
                 onTerminarPartido={terminarPartidoUI}
               />
             ) : (

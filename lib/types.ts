@@ -37,11 +37,13 @@ export interface Partido {
   golesLocal: number;
   golesVisitante: number;
   estado: 'pendiente' | 'en_vivo' | 'finalizado';
+  tiempo: 'pendiente' | 'primer_tiempo' | 'entre_tiempo' | 'segundo_tiempo' | 'finalizado';
   fecha?: string;
   hora?: string;
   horaInicio?: string;
   horaFin?: string;
   minutoActual?: number;
+  segundoActual?: number;
   incidencias: Incidencia[];
   ronda: number;
   siguientePartidoId?: string;

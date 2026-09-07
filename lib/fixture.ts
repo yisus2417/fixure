@@ -41,7 +41,12 @@ export function generarLigaRoundRobin(equipos: Equipo[]): Partido[] {
           golesLocal: 0,
           golesVisitante: 0,
           estado: 'pendiente',
+          tiempo: 'pendiente',
           hora: '',
+          horaInicio: '',
+          horaFin: '',
+          minutoActual: 0,
+          segundoActual: 0,
           incidencias: [],
           ronda: 1
         });
@@ -111,10 +116,12 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
       golesLocal: 0,
       golesVisitante: 0,
       estado: 'pendiente',
+      tiempo: 'pendiente',
       hora: '',
       horaInicio: '',
       horaFin: '',
       minutoActual: 0,
+      segundoActual: 0,
       incidencias: [],
       ronda: 1
     });
@@ -135,10 +142,12 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
       golesLocal: 0,
       golesVisitante: 0,
       estado: 'finalizado',
+      tiempo: 'finalizado',
       hora: '',
       horaInicio: '',
       horaFin: '',
       minutoActual: 0,
+      segundoActual: 0,
       incidencias: [],
       ronda: 1
     });
@@ -206,10 +215,12 @@ export function generarEliminacion(equipos: Equipo[]): Partido[] {
         golesLocal: 0,
         golesVisitante: 0,
         estado: 'pendiente',
+        tiempo: 'pendiente',
         hora: '',
         horaInicio: '',
         horaFin: '',
         minutoActual: 0,
+        segundoActual: 0,
         incidencias: [],
         ronda
       };
@@ -385,13 +396,37 @@ export function avanzarGanador(partidos: Partido[], partidoId: string): Partido[
 }
 
 /**
- * Inicia un partido (cambia estado a en_vivo y registra hora de inicio)
+ * Inicia primer tiempo de un partido
  */
 export function iniciarPartido(partidos: Partido[], partidoId: string): Partido[] {
   const ahora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   return partidos.map(p => {
     if (p.id === partidoId && p.estado === 'pendiente') {
-      return { ...p, estado: 'en_vivo' as const, horaInicio: ahora, minutoActual: 0 };
+      return { ...p, estado: 'en_vivo' as const, tiempo: 'primer_tiempo' as const, horaInicio: ahora, minutoActual: 0, segundoActual: 0 };
+    }
+    return p;
+  });
+}
+
+/**
+ * Pasa a entretiempo
+ */
+export function pasarEntreTiempo(partidos: Partido[], partidoId: string): Partido[] {
+  return partidos.map(p => {
+    if (p.id === partidoId && p.estado === 'en_vivo' && p.tiempo === 'primer_tiempo') {
+      return { ...p, tiempo: 'entre_tiempo' as const };
+    }
+    return p;
+  });
+}
+
+/**
+ * Inicia segundo tiempo
+ */
+export function iniciarSegundoTiempo(partidos: Partido[], partidoId: string): Partido[] {
+  return partidos.map(p => {
+    if (p.id === partidoId && p.estado === 'en_vivo' && p.tiempo === 'entre_tiempo') {
+      return { ...p, tiempo: 'segundo_tiempo' as const };
     }
     return p;
   });
@@ -404,19 +439,31 @@ export function terminarPartido(partidos: Partido[], partidoId: string): Partido
   const ahora = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   return partidos.map(p => {
     if (p.id === partidoId && p.estado === 'en_vivo') {
-      return { ...p, estado: 'finalizado' as const, horaFin: ahora };
+      return { ...p, estado: 'finalizado' as const, tiempo: 'finalizado' as const, horaFin: ahora };
     }
     return p;
   });
 }
 
 /**
- * Actualiza el minuto actual de un partido en vivo
+ * Actualiza el marcador de un partido
  */
-export function actualizarMinuto(partidos: Partido[], partidoId: string, minuto: number): Partido[] {
+export function actualizarMarcador(partidos: Partido[], partidoId: string, golesLocal: number, golesVisitante: number): Partido[] {
   return partidos.map(p => {
     if (p.id === partidoId && p.estado === 'en_vivo') {
-      return { ...p, minutoActual: minuto };
+      return { ...p, golesLocal, golesVisitante };
+    }
+    return p;
+  });
+}
+
+/**
+ * Actualiza minuto y segundo de un partido en vivo
+ */
+export function actualizarTiempo(partidos: Partido[], partidoId: string, minuto: number, segundo: number): Partido[] {
+  return partidos.map(p => {
+    if (p.id === partidoId && p.estado === 'en_vivo') {
+      return { ...p, minutoActual: minuto, segundoActual: segundo };
     }
     return p;
   });

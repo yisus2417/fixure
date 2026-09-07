@@ -5,13 +5,15 @@ import { Partido } from '@/lib/types';
 interface LlaveProps {
   partidos: Partido[];
   faseActual: string;
-  onActualizarResultado?: (partidoId: string, gl: number, gv: number) => void;
+  onActualizarMarcador?: (partidoId: string, gl: number, gv: number) => void;
   onIniciarPartido?: (partidoId: string) => void;
+  onPasarEntreTiempo?: (partidoId: string) => void;
+  onIniciarSegundoTiempo?: (partidoId: string) => void;
   onTerminarPartido?: (partidoId: string) => void;
   soloLectura?: boolean;
 }
 
-export default function LlaveEliminacion({ partidos, faseActual, soloLectura, onActualizarResultado, onIniciarPartido, onTerminarPartido }: LlaveProps) {
+export default function LlaveEliminacion({ partidos, faseActual, soloLectura, onActualizarMarcador, onIniciarPartido, onPasarEntreTiempo, onIniciarSegundoTiempo, onTerminarPartido }: LlaveProps) {
   const fasesOrdenadas = ['Final', 'Semifinal', 'Cuartos', 'Octavos', 'Dieciseisavos', 'Treintaidosavos'];
 
   const getFaseOrden = (fase: string): number => {
@@ -28,41 +30,71 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
 
   const getPartidosFase = (fase: string) => partidos.filter(p => p.fase === fase);
 
+  const getTiempoLabel = (tiempo: string) => {
+    switch (tiempo) {
+      case 'primer_tiempo': return '1T';
+      case 'entre_tiempo': return 'ET';
+      case 'segundo_tiempo': return '2T';
+      case 'finalizado': return 'FT';
+      default: return '';
+    }
+  };
+
   const getMinutoMostrar = (partido: Partido) => {
     if (partido.estado === 'pendiente') return null;
     if (partido.estado === 'finalizado') return 'FT';
-    if (partido.minutoActual !== undefined) return `${partido.minutoActual}'`;
+    if (partido.minutoActual !== undefined && partido.segundoActual !== undefined) {
+      return `${partido.minutoActual}:${partido.segundoActual.toString().padStart(2, '0')}`;
+    }
     return null;
+  };
+
+  const editarMarcador = (partido: Partido) => {
+    if (soloLectura || !onActualizarMarcador) return;
+    const gl = prompt(`Goles ${partido.nombreLocal}:`, String(partido.golesLocal));
+    const gv = prompt(`Goles ${partido.nombreVisitante}:`, String(partido.golesVisitante));
+    if (gl !== null && gv !== null) {
+      onActualizarMarcador(partido.id, parseInt(gl) || 0, parseInt(gv) || 0);
+    }
   };
 
   const renderPartido = (partido: Partido) => (
     <div
       key={partido.id}
       className={`bracket-match ${partido.estado === 'en_vivo' ? 'en-vivo' : ''} ${partido.estado === 'finalizado' ? 'finalizado' : ''}`}
-      style={{ cursor: soloLectura ? 'default' : 'pointer' }}
     >
       {!soloLectura && (
         <div className="bracket-controls">
           {partido.estado === 'pendiente' && onIniciarPartido && (
-            <button className="bracket-btn start" onClick={(e) => { e.stopPropagation(); onIniciarPartido(partido.id); }}>
-              ▶ Iniciar
+            <button className="bracket-btn start" onClick={() => onIniciarPartido(partido.id)}>
+              ▶ 1T
+            </button>
+          )}
+          {partido.estado === 'en_vivo' && partido.tiempo === 'primer_tiempo' && onPasarEntreTiempo && (
+            <button className="bracket-btn halftime" onClick={() => onPasarEntreTiempo(partido.id)}>
+              ⏸ ET
+            </button>
+          )}
+          {partido.estado === 'en_vivo' && partido.tiempo === 'entre_tiempo' && onIniciarSegundoTiempo && (
+            <button className="bracket-btn start" onClick={() => onIniciarSegundoTiempo(partido.id)}>
+              ▶ 2T
             </button>
           )}
           {partido.estado === 'en_vivo' && onTerminarPartido && (
-            <button className="bracket-btn end" onClick={(e) => { e.stopPropagation(); onTerminarPartido(partido.id); }}>
-              ■ Terminar
+            <button className="bracket-btn end" onClick={() => onTerminarPartido(partido.id)}>
+              ■ Fin
             </button>
           )}
         </div>
       )}
-      <div className="bracket-team">
+      <div className="bracket-team" onClick={() => partido.estado === 'en_vivo' && editarMarcador(partido)} style={{ cursor: partido.estado === 'en_vivo' && !soloLectura ? 'pointer' : 'default' }}>
         <span className="bracket-color" style={{ background: partido.colorLocal }} />
         <span className={`bracket-name ${partido.golesLocal > partido.golesVisitante ? 'ganador' : ''}`}>
           {partido.nombreLocal}
         </span>
         <span className="bracket-goles">{partido.golesLocal}</span>
       </div>
-      <div className="bracket-team">
+      <div className="bracket-team" onClick={() => partido.estado === 'en_vivo' && editarMarcador(partido)} style={{ cursor: partido.estado === 'en_vivo' && !soloLectura ? 'pointer' : 'default' }}>
         <span className="bracket-color" style={{ background: partido.colorVisitante }} />
         <span className={`bracket-name ${partido.golesVisitante > partido.golesLocal ? 'ganador' : ''}`}>
           {partido.nombreVisitante}
@@ -70,10 +102,13 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
         <span className="bracket-goles">{partido.golesVisitante}</span>
       </div>
       <div className="bracket-info">
-        {partido.estado === 'en_vivo' && partido.horaInicio && (
-          <span className="bracket-tiempo">
-            🔴 {getMinutoMostrar(partido)} · {partido.horaInicio}
-          </span>
+        {partido.estado === 'en_vivo' && (
+          <div className="bracket-tiempo-live">
+            <span className="bracket-badge-tiempo">{getTiempoLabel(partido.tiempo || '')}</span>
+            <span className="bracket-minuto">
+              {getMinutoMostrar(partido)}'
+            </span>
+          </div>
         )}
         {partido.estado === 'finalizado' && (
           <span className="bracket-tiempo finalizado">
@@ -190,6 +225,10 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
           background: #ff4757;
           color: #fff;
         }
+        .bracket-btn.halftime {
+          background: #ffa502;
+          color: #000;
+        }
         .bracket-info {
           text-align: center;
           margin-top: 6px;
@@ -203,6 +242,25 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
         }
         .bracket-tiempo.finalizado {
           color: #888;
+        }
+        .bracket-tiempo-live {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+        }
+        .bracket-badge-tiempo {
+          background: #00f5a0;
+          color: #000;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-size: 10px;
+          font-weight: bold;
+        }
+        .bracket-minuto {
+          font-size: 16px;
+          font-weight: bold;
+          color: #fff;
         }
       `}</style>
       {fasesPresentes.length === 0 ? (
