@@ -22,7 +22,7 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
     return 99;
   };
 
-  const fasesPresentes = Array.from(new Set(partidos.map(p => p.fase))).sort((a, b) => getFaseOrden(a) - getFaseOrden(b));
+  const fasesPresentes = Array.from(new Set(partidos.map(p => p.fase))).sort((a, b) => getFaseOrden(b) - getFaseOrden(a));
 
   const getPartidosFase = (fase: string) => partidos.filter(p => p.fase === fase);
 
