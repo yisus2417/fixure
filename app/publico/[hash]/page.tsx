@@ -153,16 +153,6 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
             ))}
           </div>
         )}
-
-        <footer className="footer">
-          <div className="footer-content">
-            <span className="nav-logo" style={{ justifyContent: 'center', marginBottom: '1rem' }}>
-              <span className="nav-logo-icon">⚡</span>
-              <span className="nav-logo-text">FutsalFixture</span>
-            </span>
-            <p>Actualiza automáticamente cada 5 segundos</p>
-          </div>
-        </footer>
       </div>
     </div>
   );
