@@ -10,35 +10,23 @@ interface LlaveProps {
 }
 
 export default function LlaveEliminacion({ partidos, faseActual, soloLectura, onActualizarResultado }: LlaveProps) {
-  const fases = ['Final', 'Semifinal', 'Cuartos', 'Octavos', 'Dieciseisavos', 'Treintaidosavos'];
+  const fasesOrdenadas = ['Final', 'Semifinal', 'Cuartos', 'Octavos', 'Dieciseisavos', 'Treintaidosavos'];
 
-  const getFaseIndex = (fase: string) => {
-    if (fase.includes('32')) return 5;
-    if (fase.includes('16')) return 4;
-    if (fase.includes('8')) return 3;
-    if (fase.includes('4')) return 2;
+  const getFaseOrden = (fase: string): number => {
+    if (fase.includes('32') || fase.includes('Treintaidos')) return 5;
+    if (fase.includes('16') || fase.includes('Dieciseis')) return 4;
+    if (fase.includes('8') || fase.includes('Octavos')) return 3;
+    if (fase.includes('4') || fase.includes('Cuartos')) return 2;
     if (fase.includes('Semifinal')) return 1;
     if (fase.includes('Final')) return 0;
     return 99;
   };
 
-  const partidosPorFase = fases.reduce((acc, fase) => {
-    acc[fase] = partidos.filter(p => {
-      const idx = getFaseIndex(p.fase);
-      const faseIdx = getFaseIndex(fase);
-      return idx === faseIdx;
-    });
-    return acc;
-  }, {} as Record<string, Partido[]>);
+  const fasesPresentes = Array.from(new Set(partidos.map(p => p.fase))).sort((a, b) => getFaseOrden(a) - getFaseOrden(b));
 
-  const fasesPresentes = fases.filter(f => partidosPorFase[f]?.length > 0);
+  const getPartidosFase = (fase: string) => partidos.filter(p => p.fase === fase);
 
-  const getSiguienteFase = (faseIdx: number) => {
-    const siguientes = ['Semifinal', 'Cuartos', 'Octavos', 'Dieciseisavos', 'Treintaidosavos'];
-    return siguientes[faseIdx - 1] || null;
-  };
-
-  const renderPartido = (partido: Partido, esUltimaFase: boolean) => (
+  const renderPartido = (partido: Partido) => (
     <div
       key={partido.id}
       className={`bracket-match ${partido.estado === 'en_vivo' ? 'en-vivo' : ''} ${partido.estado === 'finalizado' ? 'finalizado' : ''}`}
@@ -78,36 +66,37 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
         .bracket-container {
           display: flex;
           justify-content: center;
-          align-items: center;
-          gap: 40px;
+          align-items: stretch;
+          gap: 30px;
           padding: 20px;
           overflow-x: auto;
-          min-height: 400px;
+          min-height: 300px;
         }
         .bracket-round {
           display: flex;
           flex-direction: column;
-          gap: 16px;
-          align-items: center;
+          gap: 12px;
+          min-width: 200px;
         }
         .bracket-round-title {
           color: #00f5a0;
           font-weight: bold;
           margin-bottom: 8px;
           text-align: center;
+          font-size: 14px;
         }
         .bracket-matches {
           display: flex;
           flex-direction: column;
           justify-content: space-around;
-          height: 100%;
-          gap: 16px;
+          flex: 1;
+          gap: 12px;
         }
         .bracket-match {
           background: rgba(0, 180, 216, 0.1);
           border: 1px solid #00b4d8;
           border-radius: 8px;
-          padding: 8px 12px;
+          padding: 10px 14px;
           min-width: 180px;
           transition: all 0.2s;
         }
@@ -116,7 +105,7 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
           box-shadow: 0 0 10px rgba(0, 245, 160, 0.3);
         }
         .bracket-match.finalizado {
-          opacity: 0.8;
+          opacity: 0.85;
         }
         .bracket-team {
           display: flex;
@@ -152,25 +141,23 @@ export default function LlaveEliminacion({ partidos, faseActual, soloLectura, on
           text-align: center;
           margin-top: 4px;
         }
-        .bracket-connector {
-          width: 40px;
-          border-right: 2px solid #00b4d8;
-        }
       `}</style>
-      <div style={{ display: 'flex', gap: 40 }}>
-        {fasesPresentes.map((fase, faseIdx) => (
-          <div key={fase} className="bracket-round">
-            <div className="bracket-round-title">{fase}</div>
-            <div className="bracket-matches">
-              {partidosPorFase[fase].map((partido, idx) => (
-                <div key={partido.id}>
-                  {renderPartido(partido, faseIdx === 0)}
-                </div>
-              ))}
+      {fasesPresentes.length === 0 ? (
+        <div style={{ textAlign: 'center', color: '#888', padding: 40 }}>
+          No hay partidos generados
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: 30 }}>
+          {fasesPresentes.map(fase => (
+            <div key={fase} className="bracket-round">
+              <div className="bracket-round-title">{fase}</div>
+              <div className="bracket-matches">
+                {getPartidosFase(fase).map(partido => renderPartido(partido))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
