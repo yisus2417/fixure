@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Usuario, Torneo } from './types';
 import { generarShareHash } from './fixture';
+import { guardarTorneoKV } from './kv';
 
 const USUARIOS_KEY = 'futsal_usuarios';
 const TORNEOS_KEY = 'futsal_torneos';
@@ -92,6 +93,10 @@ export function useTorneos() {
     if (!usuario) return;
     localStorage.setItem(`${TORNEOS_KEY}_${usuario.id}`, JSON.stringify(nuevos));
     setTorneos(nuevos);
+
+    nuevos.forEach(torneo => {
+      guardarTorneoKV(torneo);
+    });
   }, [usuario]);
 
   const crearTorneo = useCallback((nombre: string, formato: 'liga' | 'eliminacion' | 'grupos', modalidad: string, numGrupos: number = 2) => {

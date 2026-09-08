@@ -1,70 +1,86 @@
 import { Torneo } from './types';
 
-const KV_URL = process.env.KV_REST_API_URL;
-const KV_TOKEN = process.env.KV_REST_API_TOKEN;
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 export async function guardarTorneoKV(torneo: Torneo): Promise<boolean> {
-  if (!KV_URL || !KV_TOKEN) {
-    console.warn('Vercel KV no configurado, usando localStorage');
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    console.warn('Upstash no configurado, usando solo localStorage');
     return false;
   }
 
   try {
-    const response = await fetch(`${KV_URL}/set/fixture_${torneo.comparteHash}`, {
+    const response = await fetch(UPSTASH_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${KV_TOKEN}`,
+        'Authorization': `Bearer ${UPSTASH_TOKEN}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(torneo),
+      body: JSON.stringify({
+        command: 'SET',
+        args: [`fixture_${torneo.comparteHash}`, JSON.stringify(torneo)]
+      }),
     });
     return response.ok;
   } catch (error) {
-    console.error('Error guardando en KV:', error);
+    console.error('Error guardando en Upstash:', error);
     return false;
   }
 }
 
 export async function obtenerTorneoKV(hash: string): Promise<Torneo | null> {
-  if (!KV_URL || !KV_TOKEN) {
-    console.warn('Vercel KV no configurado, usando localStorage');
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    console.warn('Upstash no configurado, usando solo localStorage');
     return null;
   }
 
   try {
-    const response = await fetch(`${KV_URL}/get/fixture_${hash}`, {
-      method: 'GET',
+    const response = await fetch(UPSTASH_URL, {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${KV_TOKEN}`,
+        'Authorization': `Bearer ${UPSTASH_TOKEN}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        command: 'GET',
+        args: [`fixture_${hash}`]
+      }),
     });
 
     if (response.ok) {
       const data = await response.json();
-      return data.value || null;
+      if (data.result && data.result !== 'null') {
+        return JSON.parse(data.result);
+      }
+      return null;
     }
     return null;
   } catch (error) {
-    console.error('Error obteniendo de KV:', error);
+    console.error('Error obteniendo de Upstash:', error);
     return null;
   }
 }
 
 export async function eliminarTorneoKV(hash: string): Promise<boolean> {
-  if (!KV_URL || !KV_TOKEN) {
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
     return false;
   }
 
   try {
-    const response = await fetch(`${KV_URL}/del/fixture_${hash}`, {
+    const response = await fetch(UPSTASH_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${KV_TOKEN}`,
+        'Authorization': `Bearer ${UPSTASH_TOKEN}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        command: 'DEL',
+        args: [`fixture_${hash}`]
+      }),
     });
     return response.ok;
   } catch (error) {
-    console.error('Error eliminando de KV:', error);
+    console.error('Error eliminando de Upstash:', error);
     return false;
   }
 }

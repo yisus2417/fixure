@@ -11,11 +11,11 @@ export async function GET(
     return NextResponse.json({ error: 'Hash requerido' }, { status: 400 });
   }
 
-  const torneo = await obtenerTorneoKV(hash);
+  const storage = await obtenerTorneoKV(hash);
 
-  if (!torneo) {
+  if (!storage) {
     return NextResponse.json({ error: 'Torneo no encontrado' }, { status: 404 });
   }
 
-  return NextResponse.json(torneo);
+  return NextResponse.json(storage);
 }
