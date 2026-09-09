@@ -57,10 +57,29 @@ export default function Dashboard() {
 
     guardarTorneos([...torneos, nuevoTorneo]);
     setShowModal(false);
+
+    // Save to KV (Upstash) if configured
+    fetch('/api/torneo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nuevoTorneo),
+    }).catch((e) => {
+      console.log('KV no disponible, solo localStorage');
+    });
   };
 
-  const eliminarTorneo = (id: string) => {
+  const eliminarTorneo = async (id: string) => {
     if (!confirm('¿Eliminar este torneo?')) return;
+    const torneoAEliminar = torneos.find(t => t.id === id);
+    if (torneoAEliminar) {
+      try {
+        await fetch(`/api/torneo/${torneoAEliminar.comparteHash}`, {
+          method: 'DELETE',
+        });
+      } catch (e) {
+        console.log('KV no disponible para eliminar');
+      }
+    }
     guardarTorneos(torneos.filter(t => t.id !== id));
   };
 
