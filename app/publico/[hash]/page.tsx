@@ -9,8 +9,10 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
   const { hash } = params;
   const [torneo, setTorneo] = useState<Torneo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const cargarTorneo = async () => {
+    setError(null);
     try {
       const res = await fetch(`/api/torneo/${hash}`);
       if (res.ok) {
@@ -19,27 +21,16 @@ export default function VistaPublica({ params }: { params: { hash: string } }) {
         setTorneo({ ...torneoKV, equipos: equiposConStats });
         setLoading(false);
         return;
+      } else {
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
     } catch (e) {
-      console.log('KV no disponible, buscando en localStorage');
+      console.error('Error al cargar el torneo desde Upstash:', e);
+      setError(
+        'No se pudo cargar el fixture. Puede que aún no se haya guardado en la nube o que el enlace sea incorrecto.'
+      );
+      setLoading(false);
     }
-
-    const usuarios = JSON.parse(localStorage.getItem('futsal_usuarios') || '[]');
-
-    for (const user of usuarios) {
-      const stored = localStorage.getItem(`futsal_torneos_${user.id}`);
-      if (stored) {
-        const torneos: Torneo[] = JSON.parse(stored);
-        const encontrado = torneos.find(t => t.comparteHash === hash);
-        if (encontrado) {
-          const equiposConStats = calcularEstadisticas(encontrado.equipos, encontrado.partidos);
-          setTorneo({ ...encontrado, equipos: equiposConStats });
-          setLoading(false);
-          return;
-        }
-      }
-    }
-    setLoading(false);
   };
 
   useEffect(() => {
