@@ -3,9 +3,18 @@ import { Torneo } from './types';
 const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
+if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+  // In development, we might want to warn but not crash if we are not using KV.
+  // However, for production sharing, KV is required.
+  console.warn('Upstash Redis no configurado. Las funciones de compartir requerirán Upstash.');
+  // We'll still allow the functions to be called; they will return false/null as before.
+}
+
+// Exporta las funciones tal como estaban, pero ahora lanzarán error si se intenta usar sin config?
+// Mantengamos el comportamiento anterior para no romper cosas, pero podemos mejorar el mensaje.
 export async function guardarTorneoKV(torneo: Torneo): Promise<boolean> {
   if (!UPSTASH_URL || !UPSTASH_TOKEN) {
-    console.warn('Upstash no configurado, usando solo localStorage');
+    console.warn('Upstash no configurado, guardando solo en localStorage');
     return false;
   }
 
@@ -30,7 +39,7 @@ export async function guardarTorneoKV(torneo: Torneo): Promise<boolean> {
 
 export async function obtenerTorneoKV(hash: string): Promise<Torneo | null> {
   if (!UPSTASH_URL || !UPSTASH_TOKEN) {
-    console.warn('Upstash no configurado, usando solo localStorage');
+    console.warn('Upstash no configurado, obteniendo solo de localStorage (devolverá null)');
     return null;
   }
 

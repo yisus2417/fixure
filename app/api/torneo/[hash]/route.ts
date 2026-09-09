@@ -11,6 +11,16 @@ export async function GET(
     return NextResponse.json({ error: 'Hash requerido' }, { status: 400 });
   }
 
+  // Verificar si Upstash está configurado
+  const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+  const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    return NextResponse.json(
+      { error: 'Upstash no configurado en el servidor' },
+      { status: 503 }
+    );
+  }
+
   const storage = await obtenerTorneoKV(hash);
 
   if (!storage) {
@@ -28,6 +38,15 @@ export async function DELETE(
 
   if (!hash) {
     return NextResponse.json({ error: 'Hash requerido' }, { status: 400 });
+  }
+
+  const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+  const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!UPSTASH_URL || !UPSTASH_TOKEN) {
+    return NextResponse.json(
+      { error: 'Upstash no configurado en el servidor' },
+      { status: 503 }
+    );
   }
 
   const success = await eliminarTorneoKV(hash);
