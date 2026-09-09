@@ -4,6 +4,10 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "regions": ["iad1"],
+  "env": {
+    "UPSTASH_REDIS_REST_URL": "https://eager-gopher-70839.upstash.io",
+    "UPSTASH_REDIS_REST_TOKEN": "gQAAAAAAARS3AAIgcDJmMDY1NDcxMzA0MDE0YWE1YTg3MWJhOGY5YmZlNzRkMQ"
+  },
   "functions": {
     "app/api/torneo/[hash]/route.ts": {
       "memory": 128,
